@@ -1,4 +1,4 @@
-# PingWatch 🔔
+# WatchTowerX 🔔
 
 Website uptime & performance monitor — Phase 1 (Core Engine).
 
@@ -28,7 +28,7 @@ Website uptime & performance monitor — Phase 1 (Core Engine).
 ## Project Structure
 
 ```
-pingwatch/
+WatchTowerX/
 ├── app/
 │   ├── main.py                  # FastAPI app, lifespan hooks
 │   ├── api/routes/

@@ -24,7 +24,7 @@ async def lifespan(app: FastAPI):
 
 
 app = FastAPI(
-    title="PingWatch API",
+    title="WatchTowerX API",
     description="Website uptime & performance monitoring",
     version="1.0.0",
     lifespan=lifespan,
@@ -45,4 +45,4 @@ app.include_router(results.router)
 
 @app.get("/health", tags=["health"])
 async def health():
-    return {"status": "ok", "service": "PingWatch"}
+    return {"status": "ok", "service": "WatchTowerX"}

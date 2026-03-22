@@ -7,7 +7,7 @@ services:
     environment:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: password
-      POSTGRES_DB: pingwatch
+      POSTGRES_DB: WatchTowerX
     ports:
       - "5432:5432"
     volumes:
@@ -27,7 +27,7 @@ services:
     env_file:
       - .env
     environment:
-      DATABASE_URL: postgresql+asyncpg://postgres:password@db:5432/pingwatch
+      DATABASE_URL: postgresql+asyncpg://postgres:password@db:5432/WatchTowerX
       REDIS_URL: redis://redis:6379
     depends_on:
       - db
