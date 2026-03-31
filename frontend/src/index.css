@@ -1,0 +1,75 @@
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --bg:        #080b14;
+  --bg2:       #0d1120;
+  --bg3:       #141928;
+  --border:    rgba(255,255,255,0.07);
+  --border2:   rgba(255,255,255,0.13);
+
+  --text:      #f0f2ff;
+  --muted:     #7a82a8;
+  --faint:     #3a4060;
+
+  --green:     #00f5a0;
+  --green-dim: rgba(0,245,160,0.12);
+  --red:       #ff4d6a;
+  --red-dim:   rgba(255,77,106,0.12);
+  --yellow:    #ffd23f;
+  --blue:      #4d9fff;
+  --purple:    #b57bff;
+
+  --grad-green: linear-gradient(135deg, #00f5a0, #00d9f5);
+  --grad-red:   linear-gradient(135deg, #ff4d6a, #ff8c42);
+  --grad-card:  linear-gradient(135deg, rgba(255,255,255,0.04), rgba(255,255,255,0.01));
+
+  --radius:    12px;
+  --radius-lg: 20px;
+  --font-mono: 'Space Mono', monospace;
+  --font-body: 'DM Sans', sans-serif;
+}
+
+html, body, #root {
+  height: 100%;
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font-body);
+  font-size: 15px;
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Scrollbar */
+::-webkit-scrollbar { width: 6px; }
+::-webkit-scrollbar-track { background: var(--bg); }
+::-webkit-scrollbar-thumb { background: var(--faint); border-radius: 3px; }
+
+/* Animations */
+@keyframes pulse-dot {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50%       { opacity: 0.4; transform: scale(0.7); }
+}
+@keyframes fade-up {
+  from { opacity: 0; transform: translateY(14px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+@keyframes shimmer {
+  from { background-position: -200% center; }
+  to   { background-position:  200% center; }
+}
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+@keyframes countdown {
+  from { width: 100%; }
+  to   { width: 0%; }
+}
+
+.fade-up { animation: fade-up 0.4s ease both; }
+.fade-up-2 { animation: fade-up 0.4s 0.08s ease both; }
+.fade-up-3 { animation: fade-up 0.4s 0.16s ease both; }
+.fade-up-4 { animation: fade-up 0.4s 0.24s ease both; }
+
+button { cursor: pointer; font-family: var(--font-body); border: none; }
+input, select { font-family: var(--font-body); }
+a { text-decoration: none; color: inherit; }
