@@ -6,6 +6,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from app.db.session import init_db
 from app.services.scheduler import start_scheduler, stop_scheduler
 from app.api.routes import auth, monitors, results
+from app.api.routes import alert_channels, status_pages
 
 logging.basicConfig(
     level=logging.INFO,
@@ -41,6 +42,8 @@ app.add_middleware(
 app.include_router(auth.router)
 app.include_router(monitors.router)
 app.include_router(results.router)
+app.include_router(alert_channels.router)
+app.include_router(status_pages.router)
 
 
 @app.get("/health", tags=["health"])

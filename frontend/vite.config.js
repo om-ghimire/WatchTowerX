@@ -7,8 +7,14 @@ export default defineConfig({
     port: 5173,
     proxy: {
       '/api': {
-        target: process.env.VITE_API_URL || 'http://api:8000',
+        target: 'http://localhost:8000',
         changeOrigin: true,
+      },
+      '/status': {
+        target: 'http://localhost:8000',
+        changeOrigin: true,
+        // Only proxy /status/* API calls (not the React route /status/:slug)
+        // The React router handles the page render; axios calls go to backend
       },
     },
   },

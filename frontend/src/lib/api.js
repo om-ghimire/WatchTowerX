@@ -45,4 +45,21 @@ export const resultsApi = {
   stats:   (id, hours = 24)  => api.get(`/monitors/${id}/stats?hours=${hours}`).then(r => r.data),
 }
 
+// ── Alert Channels ────────────────────────────────────
+export const alertsApi = {
+  list:   ()           => api.get('/alert-channels/').then(r => r.data),
+  create: (data)       => api.post('/alert-channels/', data).then(r => r.data),
+  update: (id, data)   => api.patch(`/alert-channels/${id}`, data).then(r => r.data),
+  remove: (id)         => api.delete(`/alert-channels/${id}`),
+  test:   (id)         => api.post(`/alert-channels/${id}/test`).then(r => r.data),
+}
+
+// ── Status Pages ──────────────────────────────────────
+export const statusPagesApi = {
+  list:        ()           => api.get('/status-pages').then(r => r.data),
+  create:      (data)       => api.post('/status-pages', data).then(r => r.data),
+  update:      (id, data)   => api.patch(`/status-pages/${id}`, data).then(r => r.data),
+  remove:      (id)         => api.delete(`/status-pages/${id}`),
+  getPublic:   (slug)       => axios.get(`/status/${slug}`).then(r => r.data),
+}
 export default api

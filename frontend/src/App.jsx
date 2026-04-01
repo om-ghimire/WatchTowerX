@@ -5,6 +5,8 @@ import AuthPage from './pages/AuthPage'
 import DashboardPage from './pages/DashboardPage'
 import MonitorsPage from './pages/MonitorsPage'
 import IncidentsPage from './pages/IncidentsPage'
+import SettingsPage from './pages/SettingsPage'
+import PublicStatusPage from './pages/PublicStatusPage'
 
 function ProtectedLayout() {
   const { isAuthed } = useAuth()
@@ -14,10 +16,11 @@ function ProtectedLayout() {
       <Sidebar />
       <main style={{ flex: 1, overflowY: 'auto', background: 'var(--bg)' }}>
         <Routes>
-          <Route path="/"          element={<DashboardPage />} />
-          <Route path="/monitors"  element={<MonitorsPage />} />
-          <Route path="/incidents" element={<IncidentsPage />} />
-          <Route path="*"          element={<Navigate to="/" replace />} />
+          <Route path="/"           element={<DashboardPage />} />
+          <Route path="/monitors"   element={<MonitorsPage />} />
+          <Route path="/incidents"  element={<IncidentsPage />} />
+          <Route path="/settings"   element={<SettingsPage />} />
+          <Route path="*"           element={<Navigate to="/" replace />} />
         </Routes>
       </main>
     </div>
@@ -29,8 +32,10 @@ export default function App() {
   return (
     <BrowserRouter>
       <Routes>
+        {/* Public status page — no auth needed */}
+        <Route path="/status/:slug" element={<PublicStatusPage />} />
         <Route path="/login" element={isAuthed ? <Navigate to="/" replace /> : <AuthPage />} />
-        <Route path="/*"     element={<ProtectedLayout />} />
+        <Route path="/*" element={<ProtectedLayout />} />
       </Routes>
     </BrowserRouter>
   )
