@@ -34,7 +34,7 @@ export default function MonitorCard({ monitor, results, stats, onEdit, onDeleted
           </div>
           <div style={{ fontWeight: 600, fontSize: 15, marginBottom: 3 }}>{monitor.name}</div>
           <div style={{ fontSize: 12, color: 'var(--muted)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-            {monitor.url}
+            {monitor.monitor_type?.toUpperCase()} - {monitor.target || monitor.url}
           </div>
         </div>
         <div style={{ display: 'flex', gap: 6, flexShrink: 0 }}>
@@ -57,7 +57,7 @@ export default function MonitorCard({ monitor, results, stats, onEdit, onDeleted
         {[
           { label: 'Uptime',    value: stats?.uptime_percent != null ? `${stats.uptime_percent}%` : '—', color: 'var(--green)' },
           { label: 'Avg resp',  value: stats?.avg_response_ms ? `${stats.avg_response_ms}ms` : '—', color: 'var(--blue)' },
-          { label: 'Interval',  value: `${monitor.interval_minutes}m`, color: 'var(--purple)' },
+          { label: 'Interval',  value: `${monitor.check_settings?.interval_seconds || monitor.interval_minutes * 60}s`, color: 'var(--purple)' },
           { label: 'Checked',   value: monitor.last_checked_at ? formatDistanceToNow(new Date(monitor.last_checked_at), { addSuffix: true }) : 'Never', color: 'var(--muted)' },
         ].map(({ label, value, color }) => (
           <div key={label} style={{ flex: 1, textAlign: 'center' }}>

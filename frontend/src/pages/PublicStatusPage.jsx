@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useParams } from 'react-router-dom'
-import axios from 'axios'
+import { statusPagesApi } from '../lib/api'
 import { formatDistanceToNow, format } from 'date-fns'
 
 // ── 90-day history bar ─────────────────────────────────
@@ -169,8 +169,8 @@ export default function PublicStatusPage() {
   const [loading, setLoad]  = useState(true)
 
   useEffect(() => {
-    axios.get(`/status/${slug}`)
-      .then(r => setData(r.data))
+    statusPagesApi.getPublic(slug)
+      .then(r => setData(r))
       .catch(() => setError('Status page not found'))
       .finally(() => setLoad(false))
   }, [slug])

@@ -4,7 +4,7 @@ from pydantic import BaseModel, HttpUrl
 
 class AlertChannelCreate(BaseModel):
     name: str
-    channel_type: Literal["teams", "slack", "custom"] = "teams"
+    channel_type: Literal["teams", "slack", "webhook", "email", "sms", "custom"] = "teams"
     webhook_url: HttpUrl
     monitor_id: Optional[int] = None
     alert_on_immediate: bool = False

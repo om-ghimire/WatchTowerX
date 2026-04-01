@@ -60,6 +60,6 @@ export const statusPagesApi = {
   create:      (data)       => api.post('/status-pages', data).then(r => r.data),
   update:      (id, data)   => api.patch(`/status-pages/${id}`, data).then(r => r.data),
   remove:      (id)         => api.delete(`/status-pages/${id}`),
-  getPublic:   (slug)       => axios.get(`/status/${slug}`).then(r => r.data),
+  getPublic:   (slug)       => axios.get(`/api/status/${slug}`).then(r => r.data),
 }
 export default api

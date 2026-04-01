@@ -90,6 +90,7 @@ async def delete_status_page(
 # ── Public (no auth) ──────────────────────────────────────────────────────────
 
 @router.get("/status/{slug}")
+@router.get("/api/status/{slug}")
 async def get_public_status_page(slug: str, db: AsyncSession = Depends(get_db)):
     """Public endpoint — returns all data needed to render the status page."""
     result = await db.execute(

@@ -27,7 +27,7 @@ async def create_monitor(
 ):
     monitor = await monitor_service.create_monitor(db, current_user.id, monitor_in)
     # Register with scheduler immediately
-    schedule_monitor(monitor.id, monitor.url, monitor.interval_minutes)
+    schedule_monitor(monitor.id, monitor_service.interval_seconds_for_monitor(monitor))
     return monitor
 
 
@@ -54,9 +54,9 @@ async def update_monitor(
     if not monitor:
         raise HTTPException(status_code=404, detail="Monitor not found")
     monitor = await monitor_service.update_monitor(db, monitor, update_in)
-    # Re-schedule if interval or active status changed
+    # Re-schedule using monitor-specific check settings.
     if monitor.is_active:
-        schedule_monitor(monitor.id, monitor.url, monitor.interval_minutes)
+        schedule_monitor(monitor.id, monitor_service.interval_seconds_for_monitor(monitor))
     else:
         unschedule_monitor(monitor.id)
     return monitor

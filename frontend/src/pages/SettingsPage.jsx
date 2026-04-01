@@ -61,10 +61,9 @@ function ChannelCard({ ch, monitors, onDeleted, onUpdated }) {
 }
 
 // ── Add channel form ───────────────────────────────────
-function AddChannelForm({ monitors, onSaved, onCancel }) {
+function AddChannelForm({ onSaved, onCancel }) {
   const [form, setForm] = useState({
     name: '', channel_type: 'teams', webhook_url: 'https://',
-    monitor_id: '', alert_on_immediate: false, retry_count: 3,
   })
   const [errors, setErrors] = useState({})
   const [loading, setLoading] = useState(false)
@@ -79,8 +78,9 @@ function AddChannelForm({ monitors, onSaved, onCancel }) {
     try {
       await alertsApi.create({
         ...form,
-        monitor_id: form.monitor_id ? parseInt(form.monitor_id) : null,
-        retry_count: parseInt(form.retry_count),
+        monitor_id: null,
+        alert_on_immediate: false,
+        retry_count: 1,
       })
       onSaved()
     } catch (err) {
@@ -96,24 +96,12 @@ function AddChannelForm({ monitors, onSaved, onCancel }) {
         <Select label="Type" value={form.channel_type} onChange={e => set('channel_type', e.target.value)}>
           <option value="teams">Microsoft Teams</option>
           <option value="slack">Slack</option>
+          <option value="webhook">Webhook</option>
           <option value="custom">Custom Webhook</option>
         </Select>
         <div style={{ gridColumn: '1/-1' }}>
           <Input label="Webhook URL" placeholder="https://outlook.office.com/webhook/..." value={form.webhook_url} onChange={e => set('webhook_url', e.target.value)} error={errors.webhook_url} />
         </div>
-        <Select label="Apply to monitor" value={form.monitor_id} onChange={e => set('monitor_id', e.target.value)}>
-          <option value="">All monitors</option>
-          {monitors.map(m => <option key={m.id} value={m.id}>{m.name}</option>)}
-        </Select>
-        <Select label="Alert trigger" value={form.alert_on_immediate ? 'immediate' : 'retry'} onChange={e => set('alert_on_immediate', e.target.value === 'immediate')}>
-          <option value="immediate">Immediately on first failure</option>
-          <option value="retry">After N consecutive failures</option>
-        </Select>
-        {!form.alert_on_immediate && (
-          <Select label="Consecutive failures before alert" value={form.retry_count} onChange={e => set('retry_count', e.target.value)}>
-            {[1,2,3,5,10].map(n => <option key={n} value={n}>{n} failure{n > 1 ? 's' : ''}</option>)}
-          </Select>
-        )}
       </div>
       <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end' }}>
         <Button variant="ghost" onClick={onCancel}>Cancel</Button>
@@ -289,7 +277,7 @@ export default function SettingsPage() {
             <div>
               <h2 style={{ fontSize: 16, fontWeight: 600 }}>Alert Channels</h2>
               <p style={{ fontSize: 13, color: 'var(--muted)', marginTop: 4 }}>
-                Get notified via Teams, Slack, or any webhook when a monitor goes down.
+                Create reusable notification channels (including Teams) and assign them per monitor.
               </p>
             </div>
             {!showForm && <Button variant="outline" onClick={() => setShowForm(true)}>+ Add Channel</Button>}
@@ -297,7 +285,7 @@ export default function SettingsPage() {
 
           {showForm && (
             <div style={{ marginBottom: 20 }}>
-              <AddChannelForm monitors={monitors} onSaved={() => { setShowForm(false); load() }} onCancel={() => setShowForm(false)} />
+              <AddChannelForm onSaved={() => { setShowForm(false); load() }} onCancel={() => setShowForm(false)} />
             </div>
           )}
 
