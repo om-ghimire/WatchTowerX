@@ -4,6 +4,7 @@ import { useAutoRefresh } from '../hooks/useAutoRefresh'
 import MonitorCard from '../components/monitors/MonitorCard'
 import MonitorModal from '../components/monitors/MonitorModal'
 import { Button, Spinner } from '../components/ui'
+import { useAuth } from '../lib/auth'
 
 export default function MonitorsPage() {
   const [monitors, setMonitors]     = useState([])
@@ -12,6 +13,7 @@ export default function MonitorsPage() {
   const [loading, setLoading]       = useState(true)
   const [showAdd, setShowAdd]       = useState(false)
   const [editMonitor, setEdit]      = useState(null)
+  const { canEdit } = useAuth()
 
   const fetchAll = useCallback(async () => {
     try {
@@ -39,7 +41,7 @@ export default function MonitorsPage() {
           <h1 style={{ fontSize: 24, fontWeight: 700, marginBottom: 4 }}>Monitors</h1>
           <div style={{ fontSize: 13, color: 'var(--muted)' }}>{monitors.length} URLs being watched</div>
         </div>
-        <Button variant="primary" onClick={() => setShowAdd(true)}>+ Add Monitor</Button>
+        {canEdit && <Button variant="primary" onClick={() => setShowAdd(true)}>+ Add Monitor</Button>}
       </div>
 
       {loading ? (
@@ -49,7 +51,7 @@ export default function MonitorsPage() {
           <div style={{ fontSize: 48, marginBottom: 16 }}>◎</div>
           <h2 style={{ fontSize: 20, fontWeight: 600, marginBottom: 8 }}>Nothing to monitor yet</h2>
           <p style={{ color: 'var(--muted)', marginBottom: 24 }}>Add your first URL and WatchTowerX will get to work.</p>
-          <Button variant="primary" onClick={() => setShowAdd(true)}>+ Add Monitor</Button>
+          {canEdit && <Button variant="primary" onClick={() => setShowAdd(true)}>+ Add Monitor</Button>}
         </div>
       ) : (
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(340px, 1fr))', gap: 16 }} className="fade-up-2">
@@ -63,7 +65,7 @@ export default function MonitorsPage() {
         </div>
       )}
 
-      {showAdd && <MonitorModal onClose={() => setShowAdd(false)} onSaved={fetchAll} />}
+      {showAdd && canEdit && <MonitorModal onClose={() => setShowAdd(false)} onSaved={fetchAll} />}
       {editMonitor && <MonitorModal monitor={editMonitor} onClose={() => setEdit(null)} onSaved={fetchAll} />}
     </div>
   )

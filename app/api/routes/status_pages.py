@@ -4,7 +4,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func, Integer, cast
 
 from app.db.session import get_db
-from app.core.security import get_current_user
+from app.core.security import get_account_owner_id, get_current_user, require_roles
 from app.models.user import User
 from app.models.status_page import StatusPage
 from app.models.monitor import Monitor
@@ -21,7 +21,8 @@ async def list_status_pages(
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
-    result = await db.execute(select(StatusPage).where(StatusPage.user_id == current_user.id))
+    account_owner_id = get_account_owner_id(current_user)
+    result = await db.execute(select(StatusPage).where(StatusPage.user_id == account_owner_id))
     pages = result.scalars().all()
     return [StatusPageOut.from_orm_obj(p) for p in pages]
 
@@ -29,14 +30,14 @@ async def list_status_pages(
 @router.post("/api/status-pages", response_model=StatusPageOut, status_code=201)
 async def create_status_page(
     page_in: StatusPageCreate,
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(require_roles("admin", "editor")),
     db: AsyncSession = Depends(get_db),
 ):
     existing = await db.execute(select(StatusPage).where(StatusPage.slug == page_in.slug))
     if existing.scalar_one_or_none():
         raise HTTPException(status_code=400, detail="Slug already taken")
     page = StatusPage(
-        user_id=current_user.id,
+        user_id=get_account_owner_id(current_user),
         slug=page_in.slug,
         title=page_in.title,
         description=page_in.description,
@@ -53,11 +54,12 @@ async def create_status_page(
 async def update_status_page(
     page_id: int,
     update_in: StatusPageUpdate,
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(require_roles("admin", "editor")),
     db: AsyncSession = Depends(get_db),
 ):
+    account_owner_id = get_account_owner_id(current_user)
     result = await db.execute(
-        select(StatusPage).where(StatusPage.id == page_id, StatusPage.user_id == current_user.id)
+        select(StatusPage).where(StatusPage.id == page_id, StatusPage.user_id == account_owner_id)
     )
     page = result.scalar_one_or_none()
     if not page:
@@ -75,11 +77,12 @@ async def update_status_page(
 @router.delete("/api/status-pages/{page_id}", status_code=204)
 async def delete_status_page(
     page_id: int,
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(require_roles("admin", "editor")),
     db: AsyncSession = Depends(get_db),
 ):
+    account_owner_id = get_account_owner_id(current_user)
     result = await db.execute(
-        select(StatusPage).where(StatusPage.id == page_id, StatusPage.user_id == current_user.id)
+        select(StatusPage).where(StatusPage.id == page_id, StatusPage.user_id == account_owner_id)
     )
     page = result.scalar_one_or_none()
     if not page:

@@ -33,6 +33,46 @@ async def init_db():
         # Lightweight schema upgrade path for existing Postgres databases.
         if conn.dialect.name == "postgresql":
             await conn.execute(text("""
+                ALTER TABLE users
+                ADD COLUMN IF NOT EXISTS role VARCHAR(20),
+                ADD COLUMN IF NOT EXISTS account_owner_id INTEGER;
+            """))
+
+            await conn.execute(text("""
+                UPDATE users
+                SET
+                    role = COALESCE(role, 'admin'),
+                    account_owner_id = COALESCE(account_owner_id, id)
+                WHERE role IS NULL OR account_owner_id IS NULL;
+            """))
+
+            await conn.execute(text("""
+                ALTER TABLE users
+                ALTER COLUMN role SET DEFAULT 'admin',
+                ALTER COLUMN role SET NOT NULL,
+                ALTER COLUMN account_owner_id SET NOT NULL;
+            """))
+
+            await conn.execute(text("""
+                DO $$
+                BEGIN
+                    IF NOT EXISTS (
+                        SELECT 1 FROM pg_constraint
+                        WHERE conname = 'fk_users_account_owner_id'
+                    ) THEN
+                        ALTER TABLE users
+                        ADD CONSTRAINT fk_users_account_owner_id
+                        FOREIGN KEY (account_owner_id) REFERENCES users(id) ON DELETE CASCADE;
+                    END IF;
+                END$$;
+            """))
+
+            await conn.execute(text("""
+                CREATE INDEX IF NOT EXISTS ix_users_account_owner_id
+                ON users(account_owner_id);
+            """))
+
+            await conn.execute(text("""
                 ALTER TABLE monitors
                 ADD COLUMN IF NOT EXISTS monitor_type VARCHAR(20),
                 ADD COLUMN IF NOT EXISTS target VARCHAR(2048),

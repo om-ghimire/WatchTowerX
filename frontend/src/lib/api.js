@@ -28,6 +28,11 @@ export const authApi = {
     form.append('password', password)
     return api.post('/auth/login', form).then(r => r.data)
   },
+  me: () => api.get('/auth/me').then(r => r.data),
+  listStaff: () => api.get('/auth/staff').then(r => r.data),
+  createStaff: (data) => api.post('/auth/staff', data).then(r => r.data),
+  updateStaff: (id, data) => api.patch(`/auth/staff/${id}`, data).then(r => r.data),
+  removeStaff: (id) => api.delete(`/auth/staff/${id}`),
 }
 
 // ── Monitors ──────────────────────────────────────────

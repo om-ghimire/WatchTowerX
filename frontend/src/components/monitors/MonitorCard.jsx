@@ -2,9 +2,11 @@ import { useState } from 'react'
 import { Card, StatusBadge, Button, UptimeBar, Spinner } from '../ui'
 import { monitorsApi } from '../../lib/api'
 import { formatDistanceToNow } from 'date-fns'
+import { useAuth } from '../../lib/auth'
 
 export default function MonitorCard({ monitor, results, stats, onEdit, onDeleted, style }) {
   const [deleting, setDeleting] = useState(false)
+  const { canEdit } = useAuth()
 
   const handleDelete = async () => {
     if (!confirm(`Delete "${monitor.name}"?`)) return
@@ -38,11 +40,15 @@ export default function MonitorCard({ monitor, results, stats, onEdit, onDeleted
           </div>
         </div>
         <div style={{ display: 'flex', gap: 6, flexShrink: 0 }}>
-          <Button size="sm" variant="ghost" onClick={onEdit}>Edit</Button>
-          {deleting
-            ? <Spinner size={16} />
-            : <Button size="sm" variant="danger" onClick={handleDelete}>Delete</Button>
-          }
+          {canEdit && (
+            <>
+              <Button size="sm" variant="ghost" onClick={onEdit}>Edit</Button>
+              {deleting
+                ? <Spinner size={16} />
+                : <Button size="sm" variant="danger" onClick={handleDelete}>Delete</Button>
+              }
+            </>
+          )}
         </div>
       </div>
 
@@ -68,16 +74,18 @@ export default function MonitorCard({ monitor, results, stats, onEdit, onDeleted
       </div>
 
       {/* Pause/Resume */}
-      <button onClick={handleToggle} style={{
-        marginTop: 14, width: '100%', padding: '7px', borderRadius: 8,
-        background: 'transparent', border: '1px solid var(--border)',
-        color: 'var(--muted)', fontSize: 12, cursor: 'pointer', transition: 'all 0.18s',
-      }}
-      onMouseEnter={e => { e.currentTarget.style.borderColor = 'var(--border2)'; e.currentTarget.style.color = 'var(--text)' }}
-      onMouseLeave={e => { e.currentTarget.style.borderColor = 'var(--border)'; e.currentTarget.style.color = 'var(--muted)' }}
-      >
-        {monitor.is_active ? '⏸  Pause monitoring' : '▶  Resume monitoring'}
-      </button>
+      {canEdit && (
+        <button onClick={handleToggle} style={{
+          marginTop: 14, width: '100%', padding: '7px', borderRadius: 8,
+          background: 'transparent', border: '1px solid var(--border)',
+          color: 'var(--muted)', fontSize: 12, cursor: 'pointer', transition: 'all 0.18s',
+        }}
+        onMouseEnter={e => { e.currentTarget.style.borderColor = 'var(--border2)'; e.currentTarget.style.color = 'var(--text)' }}
+        onMouseLeave={e => { e.currentTarget.style.borderColor = 'var(--border)'; e.currentTarget.style.color = 'var(--muted)' }}
+        >
+          {monitor.is_active ? '⏸  Pause monitoring' : '▶  Resume monitoring'}
+        </button>
+      )}
     </Card>
   )
 }

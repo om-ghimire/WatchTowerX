@@ -1,9 +1,10 @@
 import { useState, useCallback, useEffect } from 'react'
-import { alertsApi, statusPagesApi, monitorsApi } from '../lib/api'
+import { alertsApi, authApi, statusPagesApi, monitorsApi } from '../lib/api'
+import { useAuth } from '../lib/auth'
 import { Button, Input, Select, Spinner, Card } from '../components/ui'
 
 // ── Webhook channel card ───────────────────────────────
-function ChannelCard({ ch, monitors, onDeleted, onUpdated }) {
+function ChannelCard({ ch, monitors, canEdit, onDeleted }) {
   const [testing, setTesting] = useState(false)
   const [testMsg, setTestMsg] = useState('')
   const [deleting, setDeleting] = useState(false)
@@ -47,10 +48,10 @@ function ChannelCard({ ch, monitors, onDeleted, onUpdated }) {
         </div>
         <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
           {testMsg && <span style={{ fontSize: 12, color: testMsg.startsWith('✓') ? 'var(--green)' : 'var(--red)' }}>{testMsg}</span>}
-          <Button size="sm" variant="outline" onClick={handleTest} disabled={testing}>
+          {canEdit && <Button size="sm" variant="outline" onClick={handleTest} disabled={testing}>
             {testing ? '…' : 'Test'}
-          </Button>
-          {deleting ? <Spinner size={16} /> : <Button size="sm" variant="danger" onClick={handleDelete}>Delete</Button>}
+          </Button>}
+          {canEdit && (deleting ? <Spinner size={16} /> : <Button size="sm" variant="danger" onClick={handleDelete}>Delete</Button>)}
         </div>
       </div>
       <div style={{ fontSize: 12, color: 'var(--faint)', fontFamily: 'var(--font-mono)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
@@ -112,7 +113,7 @@ function AddChannelForm({ onSaved, onCancel }) {
 }
 
 // ── Status page form ───────────────────────────────────
-function StatusPageSection({ monitors }) {
+function StatusPageSection({ monitors, canEdit }) {
   const [pages, setPages]       = useState([])
   const [loading, setLoading]   = useState(true)
   const [showForm, setShowForm] = useState(false)
@@ -161,10 +162,10 @@ function StatusPageSection({ monitors }) {
           <h2 style={{ fontSize: 16, fontWeight: 600 }}>Public Status Pages</h2>
           <p style={{ fontSize: 13, color: 'var(--muted)', marginTop: 4 }}>Share a public URL showing your systems' uptime.</p>
         </div>
-        {!showForm && <Button variant="outline" onClick={() => setShowForm(true)}>+ New Page</Button>}
+        {!showForm && canEdit && <Button variant="outline" onClick={() => setShowForm(true)}>+ New Page</Button>}
       </div>
 
-      {showForm && (
+      {showForm && canEdit && (
         <Card style={{ padding: '24px', marginBottom: 16, border: '1px solid rgba(0,245,160,0.2)' }}>
           <div style={{ fontWeight: 600, fontSize: 15, marginBottom: 20, color: 'var(--green)' }}>New Status Page</div>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, marginBottom: 16 }}>
@@ -218,7 +219,103 @@ function StatusPageSection({ monitors }) {
                   {p.monitor_ids.length} monitor{p.monitor_ids.length !== 1 ? 's' : ''} · {p.is_public ? 'Public' : 'Private'}
                 </div>
               </div>
-              <Button size="sm" variant="danger" onClick={() => deletePage(p.id)}>Delete</Button>
+              {!canEdit && <span style={{ fontSize: 12, color: 'var(--muted)' }}>View only</span>}
+              {canEdit && <Button size="sm" variant="danger" onClick={() => deletePage(p.id)}>Delete</Button>}
+            </Card>
+          ))}
+        </div>
+      )}
+    </div>
+  )
+}
+
+function TeamMembersSection({ currentUser }) {
+  const [staff, setStaff] = useState([])
+  const [loading, setLoading] = useState(true)
+  const [adding, setAdding] = useState(false)
+  const [saving, setSaving] = useState(false)
+  const [form, setForm] = useState({ email: '', password: '', full_name: '', role: 'viewer' })
+
+  const loadStaff = useCallback(async () => {
+    try {
+      setStaff(await authApi.listStaff())
+    } finally {
+      setLoading(false)
+    }
+  }, [])
+
+  useEffect(() => { loadStaff() }, [loadStaff])
+
+  const createStaff = async () => {
+    setSaving(true)
+    try {
+      await authApi.createStaff(form)
+      setForm({ email: '', password: '', full_name: '', role: 'viewer' })
+      setAdding(false)
+      await loadStaff()
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  const updateRole = async (userId, role) => {
+    await authApi.updateStaff(userId, { role })
+    await loadStaff()
+  }
+
+  const removeStaff = async (userId, name) => {
+    if (!confirm(`Remove ${name || 'this user'} from workspace?`)) return
+    await authApi.removeStaff(userId)
+    await loadStaff()
+  }
+
+  return (
+    <div>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+        <div>
+          <h2 style={{ fontSize: 16, fontWeight: 600 }}>Team Access</h2>
+          <p style={{ fontSize: 13, color: 'var(--muted)', marginTop: 4 }}>Invite colleagues and set their permissions.</p>
+        </div>
+        {!adding && <Button variant="outline" onClick={() => setAdding(true)}>+ Add Staff</Button>}
+      </div>
+
+      {adding && (
+        <Card style={{ padding: 20, marginBottom: 16, border: '1px solid rgba(0,245,160,0.2)' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 180px', gap: 10 }}>
+            <Input label="Email" value={form.email} onChange={e => setForm(f => ({ ...f, email: e.target.value }))} />
+            <Input label="Password" type="password" value={form.password} onChange={e => setForm(f => ({ ...f, password: e.target.value }))} />
+            <Input label="Full name" value={form.full_name} onChange={e => setForm(f => ({ ...f, full_name: e.target.value }))} />
+            <Select label="Role" value={form.role} onChange={e => setForm(f => ({ ...f, role: e.target.value }))}>
+              <option value="viewer">Viewer</option>
+              <option value="editor">Editor</option>
+              <option value="admin">Admin</option>
+            </Select>
+          </div>
+          <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end', marginTop: 14 }}>
+            <Button variant="ghost" onClick={() => setAdding(false)}>Cancel</Button>
+            <Button variant="primary" onClick={createStaff} disabled={saving}>{saving ? 'Adding…' : 'Create Staff Account'}</Button>
+          </div>
+        </Card>
+      )}
+
+      {loading ? <Spinner size={24} /> : (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+          {staff.map(member => (
+            <Card key={member.id} style={{ padding: 16, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <div>
+                <div style={{ fontWeight: 600, fontSize: 14 }}>{member.full_name || member.email}</div>
+                <div style={{ fontSize: 12, color: 'var(--muted)' }}>{member.email}</div>
+              </div>
+              <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                <Select value={member.role} onChange={e => updateRole(member.id, e.target.value)} disabled={member.id === currentUser.id}>
+                  <option value="viewer">Viewer</option>
+                  <option value="editor">Editor</option>
+                  <option value="admin">Admin</option>
+                </Select>
+                {member.id !== currentUser.id && member.id !== currentUser.account_owner_id && (
+                  <Button size="sm" variant="danger" onClick={() => removeStaff(member.id, member.full_name || member.email)}>Remove</Button>
+                )}
+              </div>
             </Card>
           ))}
         </div>
@@ -234,6 +331,7 @@ export default function SettingsPage() {
   const [loading, setLoading]     = useState(true)
   const [showForm, setShowForm]   = useState(false)
   const [activeTab, setActiveTab] = useState('alerts')
+  const { user, canEdit, canManageStaff } = useAuth()
 
   const load = useCallback(async () => {
     try {
@@ -247,13 +345,16 @@ export default function SettingsPage() {
   const tabs = [
     { id: 'alerts', label: 'Alert Channels' },
     { id: 'status', label: 'Status Pages' },
+    ...(canManageStaff ? [{ id: 'team', label: 'Team Access' }] : []),
   ]
 
   return (
     <div style={{ flex: 1, overflowY: 'auto', padding: '32px 36px' }}>
       <div className="fade-up" style={{ marginBottom: 28 }}>
         <h1 style={{ fontSize: 24, fontWeight: 700, marginBottom: 4 }}>Settings</h1>
-        <p style={{ fontSize: 13, color: 'var(--muted)' }}>Configure alerts and public status pages.</p>
+        <p style={{ fontSize: 13, color: 'var(--muted)' }}>
+          Configure alerts, public status pages, and workspace access.
+        </p>
       </div>
 
       {/* Tabs */}
@@ -280,12 +381,18 @@ export default function SettingsPage() {
                 Create reusable notification channels (including Teams) and assign them per monitor.
               </p>
             </div>
-            {!showForm && <Button variant="outline" onClick={() => setShowForm(true)}>+ Add Channel</Button>}
+            {!showForm && canEdit && <Button variant="outline" onClick={() => setShowForm(true)}>+ Add Channel</Button>}
           </div>
 
-          {showForm && (
+          {showForm && canEdit && (
             <div style={{ marginBottom: 20 }}>
               <AddChannelForm onSaved={() => { setShowForm(false); load() }} onCancel={() => setShowForm(false)} />
+            </div>
+          )}
+
+          {!canEdit && (
+            <div style={{ marginBottom: 16, fontSize: 12, color: 'var(--muted)' }}>
+              You have viewer access. Ask an editor/admin to add or change channels.
             </div>
           )}
 
@@ -296,14 +403,18 @@ export default function SettingsPage() {
           ) : (
             <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
               {channels.map(ch => (
-                <ChannelCard key={ch.id} ch={ch} monitors={monitors} onDeleted={load} onUpdated={load} />
+                <ChannelCard key={ch.id} ch={ch} monitors={monitors} canEdit={canEdit} onDeleted={load} />
               ))}
             </div>
           )}
         </div>
+      ) : activeTab === 'status' ? (
+        <div className="fade-up-3">
+          <StatusPageSection monitors={monitors} canEdit={canEdit} />
+        </div>
       ) : (
         <div className="fade-up-3">
-          <StatusPageSection monitors={monitors} />
+          <TeamMembersSection currentUser={user} />
         </div>
       )}
     </div>

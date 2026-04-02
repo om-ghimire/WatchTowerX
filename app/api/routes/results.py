@@ -4,7 +4,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func, Integer, cast
 
 from app.db.session import get_db
-from app.core.security import get_current_user
+from app.core.security import get_account_owner_id, get_current_user
 from app.models.user import User
 from app.models.check_result import CheckResult
 from app.schemas.check_result import CheckResultOut
@@ -20,7 +20,7 @@ async def get_results(
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
-    monitor = await get_monitor(db, monitor_id, current_user.id)
+    monitor = await get_monitor(db, monitor_id, get_account_owner_id(current_user))
     if not monitor:
         raise HTTPException(status_code=404, detail="Monitor not found")
 
@@ -41,7 +41,7 @@ async def get_stats(
     db: AsyncSession = Depends(get_db),
 ):
     """Return uptime % and avg/min/max response time for the last N hours."""
-    monitor = await get_monitor(db, monitor_id, current_user.id)
+    monitor = await get_monitor(db, monitor_id, get_account_owner_id(current_user))
     if not monitor:
         raise HTTPException(status_code=404, detail="Monitor not found")
 

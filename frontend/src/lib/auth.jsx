@@ -7,6 +7,30 @@ export function AuthProvider({ children }) {
   const [token, setToken] = useState(() => localStorage.getItem('pw_token'))
   const [user, setUser]   = useState(null)
 
+  useEffect(() => {
+    let isMounted = true
+
+    const loadMe = async () => {
+      if (!token) {
+        if (isMounted) setUser(null)
+        return
+      }
+      try {
+        const me = await authApi.me()
+        if (isMounted) setUser(me)
+      } catch {
+        localStorage.removeItem('pw_token')
+        if (isMounted) {
+          setToken(null)
+          setUser(null)
+        }
+      }
+    }
+
+    loadMe()
+    return () => { isMounted = false }
+  }, [token])
+
   const login = async (email, password) => {
     const data = await authApi.login(email, password)
     localStorage.setItem('pw_token', data.access_token)
@@ -25,7 +49,16 @@ export function AuthProvider({ children }) {
   }
 
   return (
-    <AuthCtx.Provider value={{ token, user, login, register, logout, isAuthed: !!token }}>
+    <AuthCtx.Provider value={{
+      token,
+      user,
+      login,
+      register,
+      logout,
+      isAuthed: !!token,
+      canEdit: user ? ['admin', 'editor'].includes(user.role) : false,
+      canManageStaff: user?.role === 'admin',
+    }}>
       {children}
     </AuthCtx.Provider>
   )

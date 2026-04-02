@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.db.session import get_db
-from app.core.security import get_current_user
+from app.core.security import get_account_owner_id, get_current_user, require_roles
 from app.models.user import User
 from app.schemas.monitor import MonitorCreate, MonitorUpdate, MonitorOut
 from app.services import monitor_service
@@ -16,16 +16,16 @@ async def list_monitors(
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
-    return await monitor_service.get_monitors_for_user(db, current_user.id)
+    return await monitor_service.get_monitors_for_user(db, get_account_owner_id(current_user))
 
 
 @router.post("/", response_model=MonitorOut, status_code=201)
 async def create_monitor(
     monitor_in: MonitorCreate,
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(require_roles("admin", "editor")),
     db: AsyncSession = Depends(get_db),
 ):
-    monitor = await monitor_service.create_monitor(db, current_user.id, monitor_in)
+    monitor = await monitor_service.create_monitor(db, get_account_owner_id(current_user), monitor_in)
     # Register with scheduler immediately
     schedule_monitor(monitor.id, monitor_service.interval_seconds_for_monitor(monitor))
     return monitor
@@ -37,7 +37,7 @@ async def get_monitor(
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
-    monitor = await monitor_service.get_monitor(db, monitor_id, current_user.id)
+    monitor = await monitor_service.get_monitor(db, monitor_id, get_account_owner_id(current_user))
     if not monitor:
         raise HTTPException(status_code=404, detail="Monitor not found")
     return monitor
@@ -47,10 +47,10 @@ async def get_monitor(
 async def update_monitor(
     monitor_id: int,
     update_in: MonitorUpdate,
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(require_roles("admin", "editor")),
     db: AsyncSession = Depends(get_db),
 ):
-    monitor = await monitor_service.get_monitor(db, monitor_id, current_user.id)
+    monitor = await monitor_service.get_monitor(db, monitor_id, get_account_owner_id(current_user))
     if not monitor:
         raise HTTPException(status_code=404, detail="Monitor not found")
     monitor = await monitor_service.update_monitor(db, monitor, update_in)
@@ -65,10 +65,10 @@ async def update_monitor(
 @router.delete("/{monitor_id}", status_code=204)
 async def delete_monitor(
     monitor_id: int,
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(require_roles("admin", "editor")),
     db: AsyncSession = Depends(get_db),
 ):
-    monitor = await monitor_service.get_monitor(db, monitor_id, current_user.id)
+    monitor = await monitor_service.get_monitor(db, monitor_id, get_account_owner_id(current_user))
     if not monitor:
         raise HTTPException(status_code=404, detail="Monitor not found")
     unschedule_monitor(monitor.id)

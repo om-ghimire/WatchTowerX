@@ -3,7 +3,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 
 from app.db.session import get_db
-from app.core.security import get_current_user
+from app.core.security import get_account_owner_id, get_current_user, require_roles
 from app.models.user import User
 from app.models.alert_channel import AlertChannel
 from app.schemas.alert_channel import AlertChannelCreate, AlertChannelUpdate, AlertChannelOut
@@ -16,8 +16,9 @@ async def list_channels(
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
+    account_owner_id = get_account_owner_id(current_user)
     result = await db.execute(
-        select(AlertChannel).where(AlertChannel.user_id == current_user.id)
+        select(AlertChannel).where(AlertChannel.user_id == account_owner_id)
     )
     return result.scalars().all()
 
@@ -25,11 +26,11 @@ async def list_channels(
 @router.post("/", response_model=AlertChannelOut, status_code=201)
 async def create_channel(
     ch_in: AlertChannelCreate,
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(require_roles("admin", "editor")),
     db: AsyncSession = Depends(get_db),
 ):
     ch = AlertChannel(
-        user_id=current_user.id,
+        user_id=get_account_owner_id(current_user),
         name=ch_in.name,
         channel_type=ch_in.channel_type,
         webhook_url=str(ch_in.webhook_url),
@@ -47,11 +48,12 @@ async def create_channel(
 async def update_channel(
     ch_id: int,
     update_in: AlertChannelUpdate,
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(require_roles("admin", "editor")),
     db: AsyncSession = Depends(get_db),
 ):
+    account_owner_id = get_account_owner_id(current_user)
     result = await db.execute(
-        select(AlertChannel).where(AlertChannel.id == ch_id, AlertChannel.user_id == current_user.id)
+        select(AlertChannel).where(AlertChannel.id == ch_id, AlertChannel.user_id == account_owner_id)
     )
     ch = result.scalar_one_or_none()
     if not ch:
@@ -68,11 +70,12 @@ async def update_channel(
 @router.delete("/{ch_id}", status_code=204)
 async def delete_channel(
     ch_id: int,
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(require_roles("admin", "editor")),
     db: AsyncSession = Depends(get_db),
 ):
+    account_owner_id = get_account_owner_id(current_user)
     result = await db.execute(
-        select(AlertChannel).where(AlertChannel.id == ch_id, AlertChannel.user_id == current_user.id)
+        select(AlertChannel).where(AlertChannel.id == ch_id, AlertChannel.user_id == account_owner_id)
     )
     ch = result.scalar_one_or_none()
     if not ch:
@@ -83,12 +86,13 @@ async def delete_channel(
 @router.post("/{ch_id}/test", status_code=200)
 async def test_channel(
     ch_id: int,
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(require_roles("admin", "editor")),
     db: AsyncSession = Depends(get_db),
 ):
     """Send a test ping to the webhook."""
+    account_owner_id = get_account_owner_id(current_user)
     result = await db.execute(
-        select(AlertChannel).where(AlertChannel.id == ch_id, AlertChannel.user_id == current_user.id)
+        select(AlertChannel).where(AlertChannel.id == ch_id, AlertChannel.user_id == account_owner_id)
     )
     ch = result.scalar_one_or_none()
     if not ch:
