@@ -3,7 +3,6 @@ import { alertsApi, authApi, statusPagesApi, monitorsApi } from '../lib/api'
 import { useAuth } from '../lib/auth'
 import { Button, Input, Select, Spinner, Card } from '../components/ui'
 
-// ── Webhook channel card ───────────────────────────────
 function ChannelCard({ ch, monitors, canEdit, onDeleted }) {
   const [testing, setTesting] = useState(false)
   const [testMsg, setTestMsg] = useState('')
