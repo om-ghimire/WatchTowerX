@@ -248,6 +248,11 @@ export default function MonitorModal({ monitor, onClose, onSaved }) {
     }
   }
 
+  const isHttpMonitor = form.monitor_type === 'http' || form.monitor_type === 'https'
+  const intervalMinutes = Math.max(1, Math.round((Number(form.check_settings.interval_seconds) || 60) / 60))
+  const retriesBeforeDown = Number(form.retry_config.retry_attempts_before_down) || 0
+  const timeoutSeconds = Number(form.retry_config.timeout_seconds) || 0
+
   return (
     <div style={{
       position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.7)',
@@ -256,206 +261,236 @@ export default function MonitorModal({ monitor, onClose, onSaved }) {
     }} onClick={e => e.target === e.currentTarget && onClose()}>
       <div style={{
         background: 'var(--bg2)', border: '1px solid var(--border2)',
-        borderRadius: 20, padding: '32px', width: 'min(960px, 94vw)', maxHeight: '90vh', overflowY: 'auto',
+        borderRadius: 20, padding: '28px', width: 'min(1240px, 96vw)', maxHeight: '92vh', overflowY: 'auto',
         boxShadow: '0 24px 80px rgba(0,0,0,0.6)',
         animation: 'fade-up 0.25s ease',
       }}>
-        <div style={{ marginBottom: 24 }}>
+        <div style={{ marginBottom: 18 }}>
           <h2 style={{ fontSize: 18, fontWeight: 700, marginBottom: 4 }}>
             {isEdit ? 'Edit Monitor' : 'Add Monitor'}
           </h2>
           <p style={{ fontSize: 13, color: 'var(--muted)' }}>
-            {isEdit ? 'Update all independent monitor settings.' : 'Create a fully independent monitor configuration.'}
+            {isEdit ? 'Tune every check behavior in one place.' : 'Create a monitor with detailed check, retry, and alert options.'}
           </p>
         </div>
 
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 18 }}>
-          <div style={{ padding: 14, border: '1px solid var(--border)', borderRadius: 12 }}>
-            <div style={{ marginBottom: 12, fontSize: 12, color: 'var(--muted)', letterSpacing: '0.04em', textTransform: 'uppercase' }}>Basic Configuration</div>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 12 }}>
-              <Input label="Monitor Name" placeholder="Checkout API" value={form.name}
-                onChange={e => set('name', e.target.value)} error={errors.name} />
-              <Select label="Monitor Type" value={form.monitor_type}
-                onChange={e => set('monitor_type', e.target.value)}>
-                <option value="http">HTTP</option>
-                <option value="https">HTTPS</option>
-                <option value="ping">Ping</option>
-                <option value="tcp">TCP</option>
-                <option value="dns">DNS</option>
-              </Select>
-              <Input label="URL / Host / IP" placeholder="https://example.com" value={form.target}
-                onChange={e => set('target', e.target.value)} error={errors.target} />
-              <Input label="Port (if applicable)" type="number" placeholder="443" value={form.port}
-                onChange={e => set('port', e.target.value)} error={errors.port} />
+        <div className="monitor-modal-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 18 }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+            <div style={{ padding: 14, border: '1px solid var(--border)', borderRadius: 12 }}>
+              <div style={{ marginBottom: 12, fontSize: 12, color: 'var(--muted)', letterSpacing: '0.04em', textTransform: 'uppercase' }}>Monitor Basics</div>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: 10 }}>
+                <Select label="Monitor Type" value={form.monitor_type}
+                  onChange={e => set('monitor_type', e.target.value)}>
+                  <option value="http">HTTP</option>
+                  <option value="https">HTTPS</option>
+                  <option value="ping">Ping</option>
+                  <option value="tcp">TCP</option>
+                  <option value="dns">DNS</option>
+                </Select>
+                <Input label="Friendly Name" placeholder="Checkout API" value={form.name}
+                  onChange={e => set('name', e.target.value)} error={errors.name} />
+                <Input label="URL / Host / IP" placeholder="https://example.com" value={form.target}
+                  onChange={e => set('target', e.target.value)} error={errors.target} />
+                <Input label="Port (if applicable)" type="number" placeholder="443" value={form.port}
+                  onChange={e => set('port', e.target.value)} error={errors.port} />
+              </div>
             </div>
-          </div>
 
-          <div style={{ padding: 14, border: '1px solid var(--border)', borderRadius: 12 }}>
-            <div style={{ marginBottom: 12, fontSize: 12, color: 'var(--muted)', letterSpacing: '0.04em', textTransform: 'uppercase' }}>Request Configuration</div>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 12 }}>
-              <Select label="HTTP Method" value={form.request_config.method} onChange={e => setNested('request_config', 'method', e.target.value)}>
-                <option value="GET">GET</option>
-                <option value="POST">POST</option>
-                <option value="PUT">PUT</option>
-                <option value="DELETE">DELETE</option>
-              </Select>
-              <Input label="Expected Status Codes" placeholder="200,201" value={form.request_config.expected_status_codes_text}
-                onChange={e => setNested('request_config', 'expected_status_codes_text', e.target.value)} />
-            </div>
-            <textarea
-              value={form.request_config.headers_text}
-              onChange={e => setNested('request_config', 'headers_text', e.target.value)}
-              placeholder={'Headers (one per line, key:value)\nAuthorization:Bearer token'}
-              style={{ marginTop: 10, width: '100%', minHeight: 80, background: 'rgba(255,255,255,0.04)', border: '1px solid var(--border2)', borderRadius: 10, color: 'var(--text)', padding: 10 }}
-            />
-            <textarea
-              value={form.request_config.body}
-              onChange={e => setNested('request_config', 'body', e.target.value)}
-              placeholder='Request body (POST/PUT)'
-              style={{ marginTop: 10, width: '100%', minHeight: 80, background: 'rgba(255,255,255,0.04)', border: '1px solid var(--border2)', borderRadius: 10, color: 'var(--text)', padding: 10 }}
-            />
-            <Input label="Keyword Validation (optional)" placeholder="Service healthy" value={form.request_config.keyword}
-              onChange={e => setNested('request_config', 'keyword', e.target.value)} />
-          </div>
-
-          <div style={{ padding: 14, border: '1px solid var(--border)', borderRadius: 12 }}>
-            <div style={{ marginBottom: 12, fontSize: 12, color: 'var(--muted)', letterSpacing: '0.04em', textTransform: 'uppercase' }}>Retry and Failure Handling</div>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 12 }}>
-              <Input label="Retry Attempts" type="number" value={form.retry_config.retry_attempts_before_down}
-                onChange={e => setNested('retry_config', 'retry_attempts_before_down', e.target.value)} />
-              <Input label="Retry Interval (sec)" type="number" value={form.retry_config.retry_interval_seconds}
-                onChange={e => setNested('retry_config', 'retry_interval_seconds', e.target.value)} />
-              <Input label="Timeout (sec)" type="number" value={form.retry_config.timeout_seconds}
-                onChange={e => setNested('retry_config', 'timeout_seconds', e.target.value)} />
-              <Input label="Failure Threshold" type="number" value={form.retry_config.failure_threshold}
-                onChange={e => setNested('retry_config', 'failure_threshold', e.target.value)} />
-            </div>
-          </div>
-
-          <div style={{ padding: 14, border: '1px solid var(--border)', borderRadius: 12 }}>
-            <div style={{ marginBottom: 12, fontSize: 12, color: 'var(--muted)', letterSpacing: '0.04em', textTransform: 'uppercase' }}>Notifications</div>
-            <label style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10, fontSize: 13 }}>
-              <input type="checkbox" checked={form.notification_config.enabled}
-                onChange={e => setNested('notification_config', 'enabled', e.target.checked)} />
-              Enable notifications for this monitor
-            </label>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr auto auto', gap: 8, alignItems: 'end' }}>
-              <Select
-                label="Notification Channel"
-                value={selectedChannelId}
-                onChange={e => setSelectedChannelId(e.target.value)}
-              >
-                <option value="">Select a channel</option>
-                {availableChannels.map(ch => (
-                  <option key={ch.id} value={ch.id}>{ch.name} ({ch.channel_type.toUpperCase()})</option>
-                ))}
-              </Select>
-              <Button variant="outline" onClick={addNotificationChannel} disabled={!selectedChannelId}>+ Add Notification</Button>
-              <Button variant="ghost" onClick={() => { window.location.href = '/settings' }}>Manage Channels</Button>
-            </div>
-            <div style={{ marginTop: 10, display: 'flex', flexDirection: 'column', gap: 6 }}>
-              {assignedChannels.length === 0 ? (
-                <div style={{ fontSize: 12, color: 'var(--muted)' }}>No notification channels selected.</div>
-              ) : assignedChannels.map(ch => (
-                <div key={ch.id} style={{
-                  display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                  border: '1px solid var(--border2)', borderRadius: 8, padding: '8px 10px',
-                  background: 'rgba(255,255,255,0.03)'
-                }}>
-                  <span style={{ fontSize: 13 }}>{ch.name} ({ch.channel_type.toUpperCase()})</span>
-                  <button
-                    type="button"
-                    onClick={() => removeNotificationChannel(ch.id)}
-                    style={{ border: 'none', background: 'transparent', color: 'var(--red)', cursor: 'pointer' }}
-                  >
-                    Remove
-                  </button>
+            <div style={{ padding: 14, border: '1px solid var(--border)', borderRadius: 12 }}>
+              <div style={{ marginBottom: 12, fontSize: 12, color: 'var(--muted)', letterSpacing: '0.04em', textTransform: 'uppercase' }}>Heartbeat & Retries</div>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: 10 }}>
+                <div>
+                  <Input label="Heartbeat Interval (seconds)" type="number" value={form.check_settings.interval_seconds}
+                    onChange={e => setNested('check_settings', 'interval_seconds', e.target.value)} />
+                  <div style={{ fontSize: 11, color: 'var(--faint)', marginTop: 4 }}>{intervalMinutes} minute{intervalMinutes !== 1 ? 's' : ''}</div>
                 </div>
-              ))}
+                <div>
+                  <Input label="Retries" type="number" value={form.retry_config.retry_attempts_before_down}
+                    onChange={e => setNested('retry_config', 'retry_attempts_before_down', e.target.value)} />
+                  <div style={{ fontSize: 11, color: 'var(--faint)', marginTop: 4 }}>
+                    Maximum retries before service is marked down and alerting begins
+                  </div>
+                </div>
+                <Input label="Retry Interval (seconds)" type="number" value={form.retry_config.retry_interval_seconds}
+                  onChange={e => setNested('retry_config', 'retry_interval_seconds', e.target.value)} />
+                <div>
+                  <Input label="Request Timeout (seconds)" type="number" value={form.retry_config.timeout_seconds}
+                    onChange={e => setNested('retry_config', 'timeout_seconds', e.target.value)} />
+                  <div style={{ fontSize: 11, color: 'var(--faint)', marginTop: 4 }}>
+                    Timeout after {timeoutSeconds} seconds
+                  </div>
+                </div>
+                <div>
+                  <Input label="Failure Threshold" type="number" value={form.retry_config.failure_threshold}
+                    onChange={e => setNested('retry_config', 'failure_threshold', e.target.value)} />
+                  <div style={{ fontSize: 11, color: 'var(--faint)', marginTop: 4 }}>
+                    Down alert triggers after {retriesBeforeDown} consecutive retries fail
+                  </div>
+                </div>
+                <Input label="Monitoring Locations (comma separated)" placeholder="us-east-1,eu-west-1" value={form.check_settings.locations_text}
+                  onChange={e => setNested('check_settings', 'locations_text', e.target.value)} />
+              </div>
             </div>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 12, marginTop: 10 }}>
-              <Input label="Cooldown (sec)" type="number" value={form.notification_config.cooldown_seconds}
-                onChange={e => setNested('notification_config', 'cooldown_seconds', e.target.value)} />
-              <Input label="Custom Alert Message" placeholder='Use {monitor_name} and {target}' value={form.notification_config.custom_message}
-                onChange={e => setNested('notification_config', 'custom_message', e.target.value)} />
-            </div>
-            <label style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 10, fontSize: 13 }}>
-              <input type="checkbox" checked={form.notification_config.trigger_on_down}
-                onChange={e => setNested('notification_config', 'trigger_on_down', e.target.checked)} />
-              Trigger on down
-            </label>
-            <label style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 6, fontSize: 13 }}>
-              <input type="checkbox" checked={form.notification_config.trigger_on_recovery}
-                onChange={e => setNested('notification_config', 'trigger_on_recovery', e.target.checked)} />
-              Trigger on recovery
-            </label>
-          </div>
 
-          <div style={{ padding: 14, border: '1px solid var(--border)', borderRadius: 12 }}>
-            <div style={{ marginBottom: 12, fontSize: 12, color: 'var(--muted)', letterSpacing: '0.04em', textTransform: 'uppercase' }}>Check Settings</div>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 12 }}>
-              <Input label="Check Interval (sec)" type="number" value={form.check_settings.interval_seconds}
-                onChange={e => setNested('check_settings', 'interval_seconds', e.target.value)} />
-              <Input label="Monitoring Locations (comma separated)" placeholder="us-east-1,eu-west-1" value={form.check_settings.locations_text}
-                onChange={e => setNested('check_settings', 'locations_text', e.target.value)} />
-            </div>
-          </div>
-
-          <div style={{ padding: 14, border: '1px solid var(--border)', borderRadius: 12 }}>
-            <div style={{ marginBottom: 12, fontSize: 12, color: 'var(--muted)', letterSpacing: '0.04em', textTransform: 'uppercase' }}>Advanced Options</div>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 12 }}>
-              <Select label="Auth Type" value={form.advanced_config.auth_type}
-                onChange={e => setNested('advanced_config', 'auth_type', e.target.value)}>
-                <option value="none">None</option>
-                <option value="basic">Basic Auth</option>
-                <option value="api_token">API Token</option>
-              </Select>
-              <Input label="Auth Username" value={form.advanced_config.auth_username}
-                onChange={e => setNested('advanced_config', 'auth_username', e.target.value)} />
-              <Input label="Auth Password" type="password" value={form.advanced_config.auth_password}
-                onChange={e => setNested('advanced_config', 'auth_password', e.target.value)} />
-              <Input label="API Token" value={form.advanced_config.auth_token}
-                onChange={e => setNested('advanced_config', 'auth_token', e.target.value)} />
-              <Input label="Auth Header Name" value={form.advanced_config.auth_header_name}
-                onChange={e => setNested('advanced_config', 'auth_header_name', e.target.value)} />
+            <div style={{ padding: 14, border: '1px solid var(--border)', borderRadius: 12 }}>
+              <div style={{ marginBottom: 12, fontSize: 12, color: 'var(--muted)', letterSpacing: '0.04em', textTransform: 'uppercase' }}>Advanced</div>
+              <label style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 4, fontSize: 13 }}>
+                <input type="checkbox" checked={form.advanced_config.ignore_ssl_errors}
+                  onChange={e => setNested('advanced_config', 'ignore_ssl_errors', e.target.checked)} />
+                Ignore TLS/SSL certificate errors (HTTPS only)
+              </label>
+              <label style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 8, fontSize: 13 }}>
+                <input type="checkbox" checked={form.advanced_config.follow_redirects}
+                  onChange={e => setNested('advanced_config', 'follow_redirects', e.target.checked)} />
+                Follow HTTP redirects
+              </label>
               <Input label="Custom User-Agent" value={form.advanced_config.user_agent}
                 onChange={e => setNested('advanced_config', 'user_agent', e.target.value)} />
             </div>
-            <label style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 10, fontSize: 13 }}>
-              <input type="checkbox" checked={form.advanced_config.ignore_ssl_errors}
-                onChange={e => setNested('advanced_config', 'ignore_ssl_errors', e.target.checked)} />
-              Ignore SSL errors
-            </label>
-            <label style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 6, fontSize: 13 }}>
-              <input type="checkbox" checked={form.advanced_config.follow_redirects}
-                onChange={e => setNested('advanced_config', 'follow_redirects', e.target.checked)} />
-              Follow redirects
-            </label>
           </div>
 
-          <div style={{ padding: 14, border: '1px solid var(--border)', borderRadius: 12 }}>
-            <div style={{ marginBottom: 12, fontSize: 12, color: 'var(--muted)', letterSpacing: '0.04em', textTransform: 'uppercase' }}>Organization</div>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 12 }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+            <div style={{ padding: 14, border: '1px solid var(--border)', borderRadius: 12 }}>
+              <div style={{ marginBottom: 12, fontSize: 12, color: 'var(--muted)', letterSpacing: '0.04em', textTransform: 'uppercase' }}>Notifications</div>
+              <label style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10, fontSize: 13 }}>
+                <input type="checkbox" checked={form.notification_config.enabled}
+                  onChange={e => setNested('notification_config', 'enabled', e.target.checked)} />
+                Enable monitor notifications
+              </label>
+
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr auto auto', gap: 8, alignItems: 'end' }}>
+                <Select
+                  label="Notification Channel"
+                  value={selectedChannelId}
+                  onChange={e => setSelectedChannelId(e.target.value)}
+                >
+                  <option value="">Select a channel</option>
+                  {availableChannels.map(ch => (
+                    <option key={ch.id} value={ch.id}>{ch.name} ({ch.channel_type.toUpperCase()})</option>
+                  ))}
+                </Select>
+                <Button variant="outline" onClick={addNotificationChannel} disabled={!selectedChannelId}>Add</Button>
+                <Button variant="ghost" onClick={() => { window.location.href = '/settings' }}>Manage</Button>
+              </div>
+
+              <div style={{ marginTop: 10, display: 'flex', flexDirection: 'column', gap: 6 }}>
+                {assignedChannels.length === 0 ? (
+                  <div style={{ fontSize: 12, color: 'var(--muted)' }}>No notification channels selected.</div>
+                ) : assignedChannels.map(ch => (
+                  <div key={ch.id} style={{
+                    display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                    border: '1px solid var(--border2)', borderRadius: 8, padding: '8px 10px',
+                    background: 'rgba(255,255,255,0.03)'
+                  }}>
+                    <span style={{ fontSize: 13 }}>{ch.name} ({ch.channel_type.toUpperCase()})</span>
+                    <button
+                      type="button"
+                      onClick={() => removeNotificationChannel(ch.id)}
+                      style={{ border: 'none', background: 'transparent', color: 'var(--red)', cursor: 'pointer' }}
+                    >
+                      Remove
+                    </button>
+                  </div>
+                ))}
+              </div>
+
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: 10, marginTop: 10 }}>
+                <Input label="Cooldown (seconds)" type="number" value={form.notification_config.cooldown_seconds}
+                  onChange={e => setNested('notification_config', 'cooldown_seconds', e.target.value)} />
+                <Input label="Custom Alert Message" placeholder="Use {monitor_name} and {target}" value={form.notification_config.custom_message}
+                  onChange={e => setNested('notification_config', 'custom_message', e.target.value)} />
+              </div>
+              <label style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 10, fontSize: 13 }}>
+                <input type="checkbox" checked={form.notification_config.trigger_on_down}
+                  onChange={e => setNested('notification_config', 'trigger_on_down', e.target.checked)} />
+                Trigger on down
+              </label>
+              <label style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 6, fontSize: 13 }}>
+                <input type="checkbox" checked={form.notification_config.trigger_on_recovery}
+                  onChange={e => setNested('notification_config', 'trigger_on_recovery', e.target.checked)} />
+                Trigger on recovery
+              </label>
+            </div>
+
+            <div style={{ padding: 14, border: '1px solid var(--border)', borderRadius: 12 }}>
+              <div style={{ marginBottom: 12, fontSize: 12, color: 'var(--muted)', letterSpacing: '0.04em', textTransform: 'uppercase' }}>HTTP Options</div>
+              {!isHttpMonitor && (
+                <div style={{ fontSize: 12, color: 'var(--faint)', marginBottom: 10 }}>
+                  These options apply mostly to HTTP/HTTPS monitors.
+                </div>
+              )}
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+                <Select label="Method" value={form.request_config.method} onChange={e => setNested('request_config', 'method', e.target.value)}>
+                  <option value="GET">GET</option>
+                  <option value="POST">POST</option>
+                  <option value="PUT">PUT</option>
+                  <option value="DELETE">DELETE</option>
+                </Select>
+                <Input label="Accepted Status Codes" placeholder="200,201,204" value={form.request_config.expected_status_codes_text}
+                  onChange={e => setNested('request_config', 'expected_status_codes_text', e.target.value)} />
+              </div>
+              <textarea
+                value={form.request_config.body}
+                onChange={e => setNested('request_config', 'body', e.target.value)}
+                placeholder={'Body (optional)\n{\n  "key": "value"\n}'}
+                style={{ marginTop: 10, width: '100%', minHeight: 110, background: 'rgba(255,255,255,0.04)', border: '1px solid var(--border2)', borderRadius: 10, color: 'var(--text)', padding: 10 }}
+              />
+              <textarea
+                value={form.request_config.headers_text}
+                onChange={e => setNested('request_config', 'headers_text', e.target.value)}
+                placeholder={'Headers (one per line)\nAuthorization: Bearer token\nX-Trace-ID: watchtower'}
+                style={{ marginTop: 10, width: '100%', minHeight: 100, background: 'rgba(255,255,255,0.04)', border: '1px solid var(--border2)', borderRadius: 10, color: 'var(--text)', padding: 10 }}
+              />
+              <Input label="Keyword Validation" placeholder="Service healthy" value={form.request_config.keyword}
+                onChange={e => setNested('request_config', 'keyword', e.target.value)} />
+            </div>
+
+            <div style={{ padding: 14, border: '1px solid var(--border)', borderRadius: 12 }}>
+              <div style={{ marginBottom: 12, fontSize: 12, color: 'var(--muted)', letterSpacing: '0.04em', textTransform: 'uppercase' }}>Authentication</div>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+                <Select label="Auth Type" value={form.advanced_config.auth_type}
+                  onChange={e => setNested('advanced_config', 'auth_type', e.target.value)}>
+                  <option value="none">None</option>
+                  <option value="basic">Basic</option>
+                  <option value="api_token">API Token</option>
+                </Select>
+                <Input label="Header Name" value={form.advanced_config.auth_header_name}
+                  onChange={e => setNested('advanced_config', 'auth_header_name', e.target.value)} />
+                <Input label="Username" value={form.advanced_config.auth_username}
+                  onChange={e => setNested('advanced_config', 'auth_username', e.target.value)} />
+                <Input label="Password" type="password" value={form.advanced_config.auth_password}
+                  onChange={e => setNested('advanced_config', 'auth_password', e.target.value)} />
+              </div>
+              <Input label="Token" value={form.advanced_config.auth_token}
+                onChange={e => setNested('advanced_config', 'auth_token', e.target.value)} />
+            </div>
+
+            <div style={{ padding: 14, border: '1px solid var(--border)', borderRadius: 12 }}>
+              <div style={{ marginBottom: 12, fontSize: 12, color: 'var(--muted)', letterSpacing: '0.04em', textTransform: 'uppercase' }}>Organization</div>
               <Input label="Tags (comma separated)" placeholder="api,critical,checkout" value={form.organization_config.tags_text}
                 onChange={e => setNested('organization_config', 'tags_text', e.target.value)} />
               <Input label="Project / Group" placeholder="Payments" value={form.organization_config.project}
                 onChange={e => setNested('organization_config', 'project', e.target.value)} />
+              <textarea
+                value={form.organization_config.description}
+                onChange={e => setNested('organization_config', 'description', e.target.value)}
+                placeholder="Description"
+                style={{ marginTop: 10, width: '100%', minHeight: 70, background: 'rgba(255,255,255,0.04)', border: '1px solid var(--border2)', borderRadius: 10, color: 'var(--text)', padding: 10 }}
+              />
             </div>
-            <textarea
-              value={form.organization_config.description}
-              onChange={e => setNested('organization_config', 'description', e.target.value)}
-              placeholder='Description'
-              style={{ marginTop: 10, width: '100%', minHeight: 70, background: 'rgba(255,255,255,0.04)', border: '1px solid var(--border2)', borderRadius: 10, color: 'var(--text)', padding: 10 }}
-            />
           </div>
         </div>
 
-        <div style={{ display: 'flex', gap: 10, marginTop: 28, justifyContent: 'flex-end' }}>
+        <div style={{ display: 'flex', gap: 10, marginTop: 20, justifyContent: 'flex-end' }}>
           <Button variant="ghost" onClick={onClose}>Cancel</Button>
           <Button variant="primary" onClick={submit} disabled={loading}>
             {loading ? 'Saving...' : isEdit ? 'Save Changes' : 'Add Monitor'}
           </Button>
         </div>
+
+        <style>{`@media (max-width: 980px){
+          .monitor-modal-grid { grid-template-columns: 1fr !important; }
+        }`}</style>
       </div>
     </div>
   )
