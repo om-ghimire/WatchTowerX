@@ -50,7 +50,7 @@ async def init_db():
                 ALTER TABLE users
                 ALTER COLUMN role SET DEFAULT 'admin',
                 ALTER COLUMN role SET NOT NULL,
-                ALTER COLUMN account_owner_id SET NOT NULL;
+                ALTER COLUMN account_owner_id DROP NOT NULL;
             """))
 
             await conn.execute(text("""

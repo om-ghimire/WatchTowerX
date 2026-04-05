@@ -43,3 +43,7 @@ class Token(BaseModel):
 
 class TokenData(BaseModel):
     user_id: Optional[int] = None
+
+
+class SetupStatus(BaseModel):
+    first_time_setup: bool

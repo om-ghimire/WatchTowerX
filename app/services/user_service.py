@@ -28,7 +28,7 @@ async def create_user(
         hashed_password=hash_password(user_in.password),
         full_name=user_in.full_name,
         role=role,
-        account_owner_id=account_owner_id or 0,
+        account_owner_id=account_owner_id,
     )
     db.add(user)
     await db.flush()

@@ -1,6 +1,7 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../lib/auth'
+import { authApi } from '../lib/api'
 import { Button, Input } from '../components/ui'
 
 export default function AuthPage() {
@@ -10,8 +11,33 @@ export default function AuthPage() {
   const [name, setName]       = useState('')
   const [error, setError]     = useState('')
   const [loading, setLoading] = useState(false)
+  const [firstTimeSetup, setFirstTimeSetup] = useState(false)
+  const [setupLoading, setSetupLoading] = useState(true)
   const { login, register }   = useAuth()
   const navigate              = useNavigate()
+
+  useEffect(() => {
+    let active = true
+
+    const loadSetupStatus = async () => {
+      try {
+        const status = await authApi.setupStatus()
+        if (!active) return
+        setFirstTimeSetup(!!status.first_time_setup)
+        setMode(status.first_time_setup ? 'register' : 'login')
+      } catch {
+        if (active) {
+          setFirstTimeSetup(false)
+          setMode('login')
+        }
+      } finally {
+        if (active) setSetupLoading(false)
+      }
+    }
+
+    loadSetupStatus()
+    return () => { active = false }
+  }, [])
 
   const submit = async () => {
     setError(''); setLoading(true)
@@ -87,13 +113,15 @@ export default function AuthPage() {
             {loading ? 'Please wait…' : mode === 'login' ? 'Sign In' : 'Create Account'}
           </Button>
 
-          <div style={{ textAlign: 'center', marginTop: 20, fontSize: 13, color: 'var(--muted)' }}>
-            {mode === 'login' ? "Don't have an account? " : 'Already have an account? '}
-            <button onClick={() => { setMode(mode === 'login' ? 'register' : 'login'); setError('') }}
-              style={{ background: 'none', border: 'none', color: 'var(--green)', cursor: 'pointer', fontWeight: 600 }}>
-              {mode === 'login' ? 'Sign up' : 'Sign in'}
-            </button>
-          </div>
+          {!setupLoading && firstTimeSetup && (
+            <div style={{ textAlign: 'center', marginTop: 20, fontSize: 13, color: 'var(--muted)' }}>
+              Don't have an account?{' '}
+              <button onClick={() => { setMode('register'); setError('') }}
+                style={{ background: 'none', border: 'none', color: 'var(--green)', cursor: 'pointer', fontWeight: 600 }}>
+                Sign up
+              </button>
+            </div>
+          )}
         </div>
       </div>
     </div>

@@ -21,6 +21,7 @@ api.interceptors.response.use(
 
 // ── Auth ──────────────────────────────────────────────
 export const authApi = {
+  setupStatus: () => api.get('/auth/setup').then(r => r.data),
   register: (data) => api.post('/auth/register', data).then(r => r.data),
   login: (email, password) => {
     const form = new FormData()
