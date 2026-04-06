@@ -1,4 +1,4 @@
-# WatchTowerX Frontend — Phase 2
+# WatchTowerX Frontend
 
 React dashboard for the WatchTowerX uptime monitor.
 

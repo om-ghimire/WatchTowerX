@@ -116,10 +116,12 @@ function StatusPageSection({ monitors, canEdit }) {
   const [pages, setPages]       = useState([])
   const [loading, setLoading]   = useState(true)
   const [showForm, setShowForm] = useState(false)
+  const [editingPageId, setEditingPageId] = useState(null)
   const [form, setForm]         = useState({ slug: '', title: 'System Status', description: '', monitor_ids: [] })
   const [errors, setErrors]     = useState({})
   const [saving, setSaving]     = useState(false)
   const set = (k, v) => setForm(f => ({ ...f, [k]: v }))
+  const isEditing = editingPageId !== null
 
   const load = async () => {
     try { setPages(await statusPagesApi.list()) } finally { setLoading(false) }
@@ -135,17 +137,47 @@ function StatusPageSection({ monitors, canEdit }) {
 
   const submit = async () => {
     const e = {}
-    if (!form.slug.trim()) e.slug = 'Required'
-    if (!/^[a-z0-9-]+$/.test(form.slug)) e.slug = 'Only lowercase letters, numbers, hyphens'
+    if (!isEditing) {
+      if (!form.slug.trim()) e.slug = 'Required'
+      if (!/^[a-z0-9-]+$/.test(form.slug)) e.slug = 'Only lowercase letters, numbers, hyphens'
+    }
     if (Object.keys(e).length) { setErrors(e); return }
     setSaving(true)
     try {
-      await statusPagesApi.create({ ...form, slug: form.slug.toLowerCase() })
+      if (isEditing) {
+        await statusPagesApi.update(editingPageId, {
+          title: form.title,
+          description: form.description,
+          monitor_ids: form.monitor_ids,
+        })
+      } else {
+        await statusPagesApi.create({ ...form, slug: form.slug.toLowerCase() })
+      }
       setShowForm(false)
+      setEditingPageId(null)
       setForm({ slug: '', title: 'System Status', description: '', monitor_ids: [] })
       load()
     } catch (err) { setErrors({ slug: err.response?.data?.detail || 'Error' }) }
     finally { setSaving(false) }
+  }
+
+  const beginEdit = (page) => {
+    setErrors({})
+    setEditingPageId(page.id)
+    setForm({
+      slug: page.slug,
+      title: page.title || 'System Status',
+      description: page.description || '',
+      monitor_ids: page.monitor_ids || [],
+    })
+    setShowForm(true)
+  }
+
+  const cancelForm = () => {
+    setShowForm(false)
+    setEditingPageId(null)
+    setErrors({})
+    setForm({ slug: '', title: 'System Status', description: '', monitor_ids: [] })
   }
 
   const deletePage = async (id) => {
@@ -166,13 +198,27 @@ function StatusPageSection({ monitors, canEdit }) {
 
       {showForm && canEdit && (
         <Card style={{ padding: '24px', marginBottom: 16, border: '1px solid rgba(0,245,160,0.2)' }}>
-          <div style={{ fontWeight: 600, fontSize: 15, marginBottom: 20, color: 'var(--green)' }}>New Status Page</div>
+          <div style={{ fontWeight: 600, fontSize: 15, marginBottom: 20, color: 'var(--green)' }}>
+            {isEditing ? 'Edit Status Page' : 'New Status Page'}
+          </div>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, marginBottom: 16 }}>
             <div>
-              <Input label="Custom slug" placeholder="my-company" value={form.slug} onChange={e => set('slug', e.target.value.toLowerCase())} error={errors.slug} />
+              <Input
+                label="Custom slug"
+                placeholder="my-company"
+                value={form.slug}
+                onChange={e => set('slug', e.target.value.toLowerCase())}
+                error={errors.slug}
+                disabled={isEditing}
+              />
               <div style={{ fontSize: 11, color: 'var(--muted)', marginTop: 6 }}>
                 URL: <span style={{ color: 'var(--green)', fontFamily: 'var(--font-mono)' }}>WatchTowerX.com/status/{form.slug || 'your-slug'}</span>
               </div>
+              {isEditing && (
+                <div style={{ fontSize: 11, color: 'var(--faint)', marginTop: 6 }}>
+                  Slug cannot be changed after creation.
+                </div>
+              )}
             </div>
             <Input label="Page title" placeholder="System Status" value={form.title} onChange={e => set('title', e.target.value)} />
             <div style={{ gridColumn: '1/-1' }}>
@@ -194,8 +240,10 @@ function StatusPageSection({ monitors, canEdit }) {
             </div>
           </div>
           <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end' }}>
-            <Button variant="ghost" onClick={() => setShowForm(false)}>Cancel</Button>
-            <Button variant="primary" onClick={submit} disabled={saving}>{saving ? 'Creating…' : 'Create Page'}</Button>
+            <Button variant="ghost" onClick={cancelForm}>Cancel</Button>
+            <Button variant="primary" onClick={submit} disabled={saving}>
+              {saving ? (isEditing ? 'Saving…' : 'Creating…') : (isEditing ? 'Save Changes' : 'Create Page')}
+            </Button>
           </div>
         </Card>
       )}
@@ -219,7 +267,12 @@ function StatusPageSection({ monitors, canEdit }) {
                 </div>
               </div>
               {!canEdit && <span style={{ fontSize: 12, color: 'var(--muted)' }}>View only</span>}
-              {canEdit && <Button size="sm" variant="danger" onClick={() => deletePage(p.id)}>Delete</Button>}
+              {canEdit && (
+                <div style={{ display: 'flex', gap: 8 }}>
+                  <Button size="sm" variant="outline" onClick={() => beginEdit(p)}>Edit</Button>
+                  <Button size="sm" variant="danger" onClick={() => deletePage(p.id)}>Delete</Button>
+                </div>
+              )}
             </Card>
           ))}
         </div>

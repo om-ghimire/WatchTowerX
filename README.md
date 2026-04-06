@@ -79,9 +79,4 @@ npm run dev
 | GET    | /api/monitors/{id}/results        | Check history            |
 | GET    | /api/monitors/{id}/stats?hours=24 | Uptime % + response time |
 
-## Roadmap
 
-- [x] Phase 1 — Core engine (auth, ping scheduler, DB storage)
-- [x] Phase 2 — React dashboard (charts, uptime bars, incidents)
-- [ ] Phase 3 — Email & SMS alerts (SendGrid + Twilio)
-- [ ] Phase 4 — Pricing tiers + Stripe integration

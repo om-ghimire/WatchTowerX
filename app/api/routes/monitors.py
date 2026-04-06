@@ -6,6 +6,7 @@ from app.core.security import get_account_owner_id, get_current_user, require_ro
 from app.models.user import User
 from app.schemas.monitor import MonitorCreate, MonitorUpdate, MonitorOut
 from app.services import monitor_service
+from app.services.ping_service import run_check
 from app.services.scheduler import schedule_monitor, unschedule_monitor
 
 router = APIRouter(prefix="/api/monitors", tags=["monitors"])
@@ -28,7 +29,12 @@ async def create_monitor(
     monitor = await monitor_service.create_monitor(db, get_account_owner_id(current_user), monitor_in)
     # Register with scheduler immediately
     schedule_monitor(monitor.id, monitor_service.interval_seconds_for_monitor(monitor))
-    return monitor
+
+    # Run one immediate validation so users don't wait for the first interval.
+    await run_check(db, monitor.id)
+
+    refreshed = await monitor_service.get_monitor(db, monitor.id, get_account_owner_id(current_user))
+    return refreshed or monitor
 
 
 @router.get("/{monitor_id}", response_model=MonitorOut)

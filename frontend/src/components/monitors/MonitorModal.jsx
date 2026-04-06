@@ -115,10 +115,32 @@ function parseHeaders(text) {
 }
 
 function parseStatusCodes(text) {
-  return text
+  const codes = new Set()
+  text
     .split(',')
-    .map(s => Number(s.trim()))
-    .filter(n => Number.isInteger(n) && n >= 100 && n <= 599)
+    .map(s => s.trim())
+    .filter(Boolean)
+    .forEach(token => {
+      // Accept both single codes (e.g. 200) and ranges (e.g. 200-299).
+      const rangeMatch = token.match(/^(\d{3})\s*-\s*(\d{3})$/)
+      if (rangeMatch) {
+        const start = Number(rangeMatch[1])
+        const end = Number(rangeMatch[2])
+        if (start >= 100 && end <= 599 && start <= end) {
+          for (let code = start; code <= end; code += 1) {
+            codes.add(code)
+          }
+        }
+        return
+      }
+
+      const single = Number(token)
+      if (Number.isInteger(single) && single >= 100 && single <= 599) {
+        codes.add(single)
+      }
+    })
+
+  return [...codes].sort((a, b) => a - b)
 }
 
 export default function MonitorModal({ monitor, onClose, onSaved }) {
@@ -426,7 +448,7 @@ export default function MonitorModal({ monitor, onClose, onSaved }) {
                   <option value="PUT">PUT</option>
                   <option value="DELETE">DELETE</option>
                 </Select>
-                <Input label="Accepted Status Codes" placeholder="200,201,204" value={form.request_config.expected_status_codes_text}
+                <Input label="Accepted Status Codes" placeholder="200-299,301,302" value={form.request_config.expected_status_codes_text}
                   onChange={e => setNested('request_config', 'expected_status_codes_text', e.target.value)} />
               </div>
               <textarea

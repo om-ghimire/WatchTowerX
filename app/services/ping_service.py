@@ -23,6 +23,41 @@ async def _send_webhook_alert(channel_type: str, target: str, text: str) -> None
         await client.post(target, json=payload)
 
 
+def _expand_expected_status_codes(raw_codes: object) -> set[int]:
+    """Normalize accepted status code values (ints and ranges like '200-299')."""
+    if not isinstance(raw_codes, list):
+        return {200}
+
+    expanded: set[int] = set()
+    for raw in raw_codes:
+        if isinstance(raw, int):
+            if 100 <= raw <= 599:
+                expanded.add(raw)
+            continue
+
+        if isinstance(raw, str):
+            token = raw.strip()
+            if not token:
+                continue
+            if "-" in token:
+                parts = token.split("-", 1)
+                if len(parts) != 2:
+                    continue
+                start_str, end_str = parts[0].strip(), parts[1].strip()
+                if start_str.isdigit() and end_str.isdigit():
+                    start, end = int(start_str), int(end_str)
+                    if 100 <= start <= end <= 599:
+                        for code in range(start, end + 1):
+                            expanded.add(code)
+                continue
+            if token.isdigit():
+                code = int(token)
+                if 100 <= code <= 599:
+                    expanded.add(code)
+
+    return expanded or {200}
+
+
 def _message_from_template(template: str | None, fallback: str, monitor: Monitor) -> str:
     if not template:
         return fallback
@@ -105,7 +140,9 @@ async def _http_check(monitor: Monitor) -> dict:
     headers = dict(request_cfg.get("headers") or {})
     body = request_cfg.get("body")
     keyword = request_cfg.get("keyword")
-    expected_status_codes = request_cfg.get("expected_status_codes") or [200]
+    expected_status_codes = _expand_expected_status_codes(
+        request_cfg.get("expected_status_codes") or [200]
+    )
 
     if advanced_cfg.get("user_agent"):
         headers["User-Agent"] = advanced_cfg["user_agent"]
