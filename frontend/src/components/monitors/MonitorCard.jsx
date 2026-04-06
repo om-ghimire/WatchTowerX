@@ -4,9 +4,19 @@ import { monitorsApi } from '../../lib/api'
 import { formatDistanceToNow } from 'date-fns'
 import { useAuth } from '../../lib/auth'
 
+function parseServerTimestamp(value) {
+  if (!value) return null
+  const asText = String(value)
+  const hasTimezone = /[zZ]$|[+-]\d{2}:\d{2}$/.test(asText)
+  const normalized = hasTimezone ? asText : `${asText}Z`
+  const parsed = new Date(normalized)
+  return Number.isNaN(parsed.getTime()) ? null : parsed
+}
+
 export default function MonitorCard({ monitor, results, stats, onEdit, onDeleted, style }) {
   const [deleting, setDeleting] = useState(false)
   const { canEdit } = useAuth()
+  const checkedAt = parseServerTimestamp(monitor.last_checked_at)
 
   const handleDelete = async () => {
     if (!confirm(`Delete "${monitor.name}"?`)) return
@@ -54,7 +64,7 @@ export default function MonitorCard({ monitor, results, stats, onEdit, onDeleted
 
       {/* Uptime bar */}
       <div style={{ marginBottom: 16 }}>
-        <div style={{ fontSize: 11, color: 'var(--muted)', marginBottom: 6, letterSpacing: '0.04em' }}>LAST 90 CHECKS</div>
+        <div style={{ fontSize: 11, color: 'var(--muted)', marginBottom: 6, letterSpacing: '0.04em' }}>RECENT CHECKS</div>
         <UptimeBar results={results || []} />
       </div>
 
@@ -62,9 +72,9 @@ export default function MonitorCard({ monitor, results, stats, onEdit, onDeleted
       <div style={{ display: 'flex', gap: 0, borderTop: '1px solid var(--border)', paddingTop: 14 }}>
         {[
           { label: 'Uptime',    value: stats?.uptime_percent != null ? `${stats.uptime_percent}%` : '—', color: 'var(--green)' },
-          { label: 'Avg resp',  value: stats?.avg_response_ms ? `${stats.avg_response_ms}ms` : '—', color: 'var(--blue)' },
+          { label: 'Avg response (last 24h)',  value: stats?.avg_response_ms ? `${stats.avg_response_ms}ms` : '—', color: 'var(--blue)' },
           { label: 'Interval',  value: `${monitor.check_settings?.interval_seconds || monitor.interval_minutes * 60}s`, color: 'var(--purple)' },
-          { label: 'Checked',   value: monitor.last_checked_at ? formatDistanceToNow(new Date(monitor.last_checked_at), { addSuffix: true }) : 'Never', color: 'var(--muted)' },
+          { label: 'Checked',   value: checkedAt ? formatDistanceToNow(checkedAt, { addSuffix: true }) : 'Never', color: 'var(--muted)' },
         ].map(({ label, value, color }) => (
           <div key={label} style={{ flex: 1, textAlign: 'center' }}>
             <div style={{ fontFamily: 'var(--font-mono)', fontSize: 14, fontWeight: 700, color }}>{value}</div>

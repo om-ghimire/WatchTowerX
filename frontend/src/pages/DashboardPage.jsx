@@ -37,7 +37,7 @@ function MonitorRow({ monitor, results, stats, onEdit }) {
       </div>
       <div>
         <UptimeBar results={results || []} />
-        <div style={{ fontSize: 10, color: 'var(--faint)', marginTop: 4, textAlign: 'right' }}>90 checks</div>
+        <div style={{ fontSize: 10, color: 'var(--faint)', marginTop: 4, textAlign: 'right' }}>Last 90 recorded checks</div>
       </div>
       <div style={{ textAlign: 'center' }}>
         <div style={{ fontFamily: 'var(--font-mono)', fontSize: 15, fontWeight: 700, color: uptime >= 99 ? 'var(--green)' : uptime >= 90 ? 'var(--yellow)' : 'var(--red)' }}>
@@ -47,7 +47,7 @@ function MonitorRow({ monitor, results, stats, onEdit }) {
       </div>
       <div style={{ textAlign: 'center' }}>
         <div style={{ fontFamily: 'var(--font-mono)', fontSize: 15, fontWeight: 700, color: 'var(--blue)' }}>{avg ? `${avg}ms` : '—'}</div>
-        <div style={{ fontSize: 10, color: 'var(--muted)', marginTop: 2 }}>avg resp</div>
+        <div style={{ fontSize: 10, color: 'var(--muted)', marginTop: 2 }}>Avg response (last 24h)</div>
       </div>
       <div style={{ display: 'flex', gap: 6, justifyContent: 'flex-end', alignItems: 'center' }}>
         {!monitor.is_active && <span style={{ fontSize: 10, color: 'var(--yellow)', background: 'rgba(255,210,63,0.1)', border: '1px solid rgba(255,210,63,0.2)', borderRadius: 4, padding: '2px 6px' }}>PAUSED</span>}
@@ -133,7 +133,7 @@ export default function DashboardPage() {
         ) : (
           <div style={{ background: 'var(--bg2)', border: '1px solid var(--border)', borderRadius: 16, overflow: 'hidden' }}>
             <div style={{ display: 'grid', gridTemplateColumns: '28px 1fr 160px 90px 90px 110px', gap: 16, padding: '12px 24px', background: 'rgba(255,255,255,0.02)', borderBottom: '1px solid var(--border)', fontSize: 11, color: 'var(--faint)', textTransform: 'uppercase', letterSpacing: '0.06em' }}>
-              <div /><div>Monitor</div><div>Last 90 checks</div><div style={{textAlign:'center'}}>Uptime</div><div style={{textAlign:'center'}}>Response</div><div />
+              <div /><div>Monitor</div><div>Recent checks</div><div style={{textAlign:'center'}}>Uptime</div><div style={{textAlign:'center'}}>Avg response (last 24h)</div><div />
             </div>
             {monitors.map(m => (
               <MonitorRow key={m.id} monitor={m} results={allResults[m.id]} stats={allStats[m.id]} onEdit={() => setEdit(m)} />
