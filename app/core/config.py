@@ -9,6 +9,7 @@ class Settings(BaseSettings):
 
     DATABASE_URL: str = "postgresql+asyncpg://postgres:password@localhost:5432/WatchTowerX"
     REDIS_URL: str = "redis://localhost:6379"
+    REDIS_PASSWORD: str = ""
 
     DEFAULT_CHECK_INTERVAL_MINUTES: int = 5
 
