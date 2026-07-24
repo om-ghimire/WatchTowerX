@@ -30,6 +30,12 @@ class Monitor(Base):
     is_active: Mapped[bool] = mapped_column(Boolean, default=True)
     is_up: Mapped[bool] = mapped_column(Boolean, nullable=True)         # last known status
 
+    # Group support — a "group" monitor is a virtual parent with no health check of
+    # its own; its status is computed from children referencing it via parent_group_id.
+    parent_group_id: Mapped[int | None] = mapped_column(ForeignKey("monitors.id"), nullable=True, index=True)
+    display_order: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
+    group_config: Mapped[dict] = mapped_column(JSON, default=dict, nullable=False)
+
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
     last_checked_at: Mapped[datetime] = mapped_column(DateTime, nullable=True)
     last_failure_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)

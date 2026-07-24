@@ -22,6 +22,52 @@ const MAINTENANCE_STATUS_COLOR = {
   completed: 'var(--green)', cancelled: 'var(--faint)',
 }
 
+const GROUP_STATUS_META = {
+  ...COMPONENT_STATUS_META,
+  paused: { label: 'Paused', color: 'var(--faint)' },
+  unknown: { label: 'No Data', color: 'var(--faint)' },
+}
+
+// ── Monitor groups (collapsible, wraps MonitorRow) ──────
+function GroupSection({ group, monitors }) {
+  const [expanded, setExpanded] = useState(group.expanded_by_default ?? true)
+  const meta = GROUP_STATUS_META[group.summary?.status] || GROUP_STATUS_META.unknown
+  const children = monitors.filter(m => group.monitor_ids.includes(m.id))
+
+  return (
+    <div style={{
+      background: 'var(--surface)', border: '1px solid var(--border)',
+      borderRadius: 'var(--radius-sm)', overflow: 'hidden',
+    }}>
+      <div
+        onClick={() => setExpanded(e => !e)}
+        style={{ padding: '14px 20px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 12 }}
+      >
+        <span style={{ fontSize: 11, color: 'var(--faint)', transition: 'transform 0.15s', transform: expanded ? 'rotate(90deg)' : 'none' }}>▶</span>
+        {group.icon && <span style={{ fontSize: 14 }}>{group.icon}</span>}
+        <div style={{ flex: 1, fontWeight: 600, fontSize: 14, color: 'var(--text)' }}>{group.name}</div>
+        <span style={{ fontSize: 11, fontWeight: 700, fontFamily: 'var(--font-mono)', color: meta.color, textTransform: 'uppercase' }}>{meta.label}</span>
+      </div>
+      {expanded && (
+        <div style={{ borderTop: '1px solid var(--border)', padding: '8px 20px 14px', display: 'flex', flexDirection: 'column', gap: 10 }}>
+          {children.length === 0 ? (
+            <div style={{ fontSize: 12, color: 'var(--faint)', padding: '8px 0' }}>No services in this group.</div>
+          ) : children.map(m => <MonitorRow key={m.id} m={m} />)}
+        </div>
+      )}
+    </div>
+  )
+}
+
+function GroupsList({ groups, monitors }) {
+  if (!groups?.length) return null
+  return (
+    <div className="fade-up-2" style={{ marginBottom: 40, display: 'flex', flexDirection: 'column', gap: 10 }}>
+      {groups.map(g => <GroupSection key={g.id} group={g} monitors={monitors} />)}
+    </div>
+  )
+}
+
 // ── Service components ─────────────────────────────────
 function ComponentsList({ components }) {
   if (!components?.length) return null
@@ -387,20 +433,26 @@ export default function PublicStatusPage() {
         )}
 
         <ComponentsList components={data.components} />
+        <GroupsList groups={data.groups} monitors={data.monitors} />
 
-        {/* Monitor list */}
+        {/* Monitor list — excludes monitors already shown nested under a group above */}
         <div className="fade-up-3" style={{ marginBottom: 44 }}>
           <div style={{ fontSize: 11, color: 'var(--faint)', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 14 }}>
             {data.monitors.length} service{data.monitors.length !== 1 ? 's' : ''} monitored
           </div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-            {data.monitors.length === 0 ? (
-              <div style={{ padding: '40px', textAlign: 'center', color: 'var(--faint)', border: '1px dashed var(--border)', borderRadius: 'var(--radius-sm)' }}>
-                No monitors configured for this page.
-              </div>
-            ) : (
-              data.monitors.map(m => <MonitorRow key={m.id} m={m} />)
-            )}
+            {(() => {
+              const groupedIds = new Set((data.groups || []).flatMap(g => g.monitor_ids))
+              const ungrouped = data.monitors.filter(m => !groupedIds.has(m.id))
+              if (data.monitors.length === 0) {
+                return (
+                  <div style={{ padding: '40px', textAlign: 'center', color: 'var(--faint)', border: '1px dashed var(--border)', borderRadius: 'var(--radius-sm)' }}>
+                    No monitors configured for this page.
+                  </div>
+                )
+              }
+              return ungrouped.map(m => <MonitorRow key={m.id} m={m} />)
+            })()}
           </div>
         </div>
 

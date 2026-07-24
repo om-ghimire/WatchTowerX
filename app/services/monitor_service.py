@@ -8,6 +8,8 @@ from app.schemas.monitor import MonitorCreate, MonitorUpdate
 
 
 def _url_for_monitor_type(monitor_type: str, target: str) -> str:
+    if monitor_type == "group":
+        return "group://internal"  # virtual monitor — no real endpoint
     if monitor_type == "https":
         return target if target.startswith("https://") else f"https://{target}"
     if monitor_type == "http":
@@ -72,14 +74,16 @@ async def create_monitor(db: AsyncSession, user_id: int, monitor_in: MonitorCrea
         monitor_type=payload["monitor_type"],
         target=payload["target"],
         port=payload.get("port"),
-        url=payload.get("url") or payload["target"],
+        url=payload.get("url") or payload["target"] or "group://internal",
         interval_minutes=payload.get("interval_minutes", 1),
+        parent_group_id=payload.get("parent_group_id"),
         request_config=payload.get("request_config", {}),
         retry_config=payload.get("retry_config", {}),
         notification_config=payload.get("notification_config", {}),
         check_settings=payload.get("check_settings", {}),
         advanced_config=payload.get("advanced_config", {}),
         organization_config=payload.get("organization_config", {}),
+        group_config=payload.get("group_config", {}),
     )
     db.add(monitor)
     await db.flush()

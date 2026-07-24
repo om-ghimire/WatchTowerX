@@ -54,7 +54,7 @@ def unschedule_monitor(monitor_id: int):
 async def load_all_monitors():
     """On startup, load all active monitors from DB and schedule them."""
     async with AsyncSessionLocal() as db:
-        monitors = await get_all_active_monitors(db)
+        monitors = [m for m in await get_all_active_monitors(db) if m.monitor_type != "group"]
         for m in monitors:
             schedule_monitor(m.id, interval_seconds_for_monitor(m))
     logger.info(f"Loaded {len(monitors)} monitors from DB")

@@ -29,6 +29,7 @@ async def init_db():
     async with engine.begin() as conn:
         from app.models import user, monitor, check_result, alert_channel, status_page  # noqa: F401
         from app.models import status_page_component, incident, maintenance_window  # noqa: F401
+        from app.models import audit_log  # noqa: F401
         await conn.run_sync(Base.metadata.create_all)
 
         # Lightweight schema upgrade path for existing Postgres databases.
@@ -133,4 +134,30 @@ async def init_db():
                 ALTER COLUMN organization_config SET NOT NULL,
                 ALTER COLUMN consecutive_failures SET DEFAULT 0,
                 ALTER COLUMN consecutive_failures SET NOT NULL;
+            """))
+
+            # Monitor Groups support.
+            await conn.execute(text("""
+                ALTER TABLE monitors
+                ADD COLUMN IF NOT EXISTS parent_group_id INTEGER REFERENCES monitors(id),
+                ADD COLUMN IF NOT EXISTS display_order INTEGER,
+                ADD COLUMN IF NOT EXISTS group_config JSON;
+            """))
+            await conn.execute(text("""
+                UPDATE monitors
+                SET
+                    display_order = COALESCE(display_order, 0),
+                    group_config = COALESCE(group_config, '{}'::json)
+                WHERE display_order IS NULL OR group_config IS NULL;
+            """))
+            await conn.execute(text("""
+                ALTER TABLE monitors
+                ALTER COLUMN display_order SET DEFAULT 0,
+                ALTER COLUMN display_order SET NOT NULL,
+                ALTER COLUMN group_config SET DEFAULT '{}'::json,
+                ALTER COLUMN group_config SET NOT NULL;
+            """))
+            await conn.execute(text("""
+                CREATE INDEX IF NOT EXISTS ix_monitors_parent_group_id
+                ON monitors(parent_group_id);
             """))

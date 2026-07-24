@@ -1,12 +1,21 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Button, Input, Select } from '../ui'
-import { alertsApi, monitorsApi } from '../../lib/api'
+import { alertsApi, monitorsApi, groupsApi } from '../../lib/api'
+
+const HEALTH_POLICIES = [
+  { value: 'worst_status_wins', label: 'Worst Status Wins (default)' },
+  { value: 'any_down', label: 'Any Child Down' },
+  { value: 'majority_down', label: 'Majority Down' },
+  { value: 'percentage_threshold', label: 'Percentage Threshold' },
+  { value: 'custom_priority', label: 'Custom Priority (critical monitors)' },
+]
 
 const defaultForm = {
   name: '',
   monitor_type: 'http',
   target: 'https://',
   port: '',
+  parent_group_id: '',
   request_config: {
     method: 'GET',
     headers_text: '',
@@ -47,6 +56,16 @@ const defaultForm = {
     project: '',
     description: '',
   },
+  group_config: {
+    icon: '',
+    color: '',
+    expanded_by_default: true,
+    is_public: false,
+    health_policy: 'worst_status_wins',
+    percentage_threshold: 50,
+    critical_monitor_ids: [],
+    notify_on_group_status_change: false,
+  },
 }
 
 function buildInitialForm(monitor) {
@@ -58,6 +77,7 @@ function buildInitialForm(monitor) {
     monitor_type: monitor.monitor_type || 'http',
     target: monitor.target || monitor.url || '',
     port: monitor.port || '',
+    parent_group_id: monitor.parent_group_id || '',
     request_config: {
       method: monitor.request_config?.method || 'GET',
       headers_text: Object.entries(headers).map(([k, v]) => `${k}:${v}`).join('\n'),
@@ -97,6 +117,16 @@ function buildInitialForm(monitor) {
       tags_text: (monitor.organization_config?.tags || []).join(','),
       project: monitor.organization_config?.project || '',
       description: monitor.organization_config?.description || '',
+    },
+    group_config: {
+      icon: monitor.group_config?.icon || '',
+      color: monitor.group_config?.color || '',
+      expanded_by_default: monitor.group_config?.expanded_by_default ?? true,
+      is_public: !!monitor.group_config?.is_public,
+      health_policy: monitor.group_config?.health_policy || 'worst_status_wins',
+      percentage_threshold: monitor.group_config?.health_policy_config?.percentage_threshold ?? 50,
+      critical_monitor_ids: monitor.group_config?.health_policy_config?.critical_monitor_ids || [],
+      notify_on_group_status_change: !!monitor.group_config?.health_policy_config?.notify_on_group_status_change,
     },
   }
 }
@@ -150,6 +180,8 @@ export default function MonitorModal({ monitor, onClose, onSaved }) {
   const [loading, setLoading] = useState(false)
   const [availableChannels, setAvailableChannels] = useState([])
   const [selectedChannelId, setSelectedChannelId] = useState('')
+  const [availableGroups, setAvailableGroups] = useState([])
+  const [availableMonitors, setAvailableMonitors] = useState([])
 
   const set = (k, v) => setForm(f => ({ ...f, [k]: v }))
   const setNested = (section, key, value) => {
@@ -158,13 +190,9 @@ export default function MonitorModal({ monitor, onClose, onSaved }) {
 
   useEffect(() => {
     let active = true
-    alertsApi.list()
-      .then(data => {
-        if (active) setAvailableChannels(data || [])
-      })
-      .catch(() => {
-        if (active) setAvailableChannels([])
-      })
+    alertsApi.list().then(data => { if (active) setAvailableChannels(data || []) }).catch(() => { if (active) setAvailableChannels([]) })
+    groupsApi.list().then(data => { if (active) setAvailableGroups(data || []) }).catch(() => { if (active) setAvailableGroups([]) })
+    monitorsApi.list().then(data => { if (active) setAvailableMonitors(data || []) }).catch(() => { if (active) setAvailableMonitors([]) })
     return () => { active = false }
   }, [])
 
@@ -188,9 +216,17 @@ export default function MonitorModal({ monitor, onClose, onSaved }) {
     )
   }
 
+  const isGroup = form.monitor_type === 'group'
+
+  const toggleCriticalMonitor = (id) => {
+    const current = form.group_config.critical_monitor_ids
+    setNested('group_config', 'critical_monitor_ids', current.includes(id) ? current.filter(x => x !== id) : [...current, id])
+  }
+
   const validate = () => {
     const e = {}
     if (!form.name.trim()) e.name = 'Name is required'
+    if (isGroup) return e
     if (!form.target.trim()) e.target = 'URL / Host / IP is required'
     if ((form.monitor_type === 'http' || form.monitor_type === 'https') && !form.target.startsWith('http')) {
       e.target = 'HTTP/HTTPS targets must start with http:// or https://'
@@ -204,8 +240,9 @@ export default function MonitorModal({ monitor, onClose, onSaved }) {
   const toPayload = () => ({
     name: form.name.trim(),
     monitor_type: form.monitor_type,
-    target: form.target.trim(),
-    port: form.port ? Number(form.port) : null,
+    target: isGroup ? '' : form.target.trim(),
+    port: isGroup ? null : (form.port ? Number(form.port) : null),
+    parent_group_id: form.parent_group_id ? Number(form.parent_group_id) : null,
     request_config: {
       method: form.request_config.method,
       headers: parseHeaders(form.request_config.headers_text),
@@ -248,6 +285,18 @@ export default function MonitorModal({ monitor, onClose, onSaved }) {
       project: form.organization_config.project || null,
       description: form.organization_config.description || null,
     },
+    group_config: {
+      icon: form.group_config.icon || null,
+      color: form.group_config.color || null,
+      expanded_by_default: !!form.group_config.expanded_by_default,
+      is_public: !!form.group_config.is_public,
+      health_policy: form.group_config.health_policy,
+      health_policy_config: {
+        percentage_threshold: Number(form.group_config.percentage_threshold) || 50,
+        critical_monitor_ids: form.group_config.critical_monitor_ids,
+        notify_on_group_status_change: !!form.group_config.notify_on_group_status_change,
+      },
+    },
   })
 
   const submit = async () => {
@@ -275,6 +324,9 @@ export default function MonitorModal({ monitor, onClose, onSaved }) {
   const retriesBeforeDown = Number(form.retry_config.retry_attempts_before_down) || 0
   const timeoutSeconds = Number(form.retry_config.timeout_seconds) || 0
 
+  const selectableGroups = availableGroups.filter(g => g.id !== monitor?.id)
+  const selectableMonitors = availableMonitors.filter(m => m.monitor_type !== 'group' && m.id !== monitor?.id)
+
   return (
     <div style={{
       position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.7)',
@@ -289,13 +341,103 @@ export default function MonitorModal({ monitor, onClose, onSaved }) {
       }}>
         <div style={{ marginBottom: 18 }}>
           <h2 style={{ fontSize: 18, fontWeight: 700, marginBottom: 4 }}>
-            {isEdit ? 'Edit Monitor' : 'Add Monitor'}
+            {isEdit ? `Edit ${isGroup ? 'Group' : 'Monitor'}` : `Add ${isGroup ? 'Group' : 'Monitor'}`}
           </h2>
           <p style={{ fontSize: 13, color: 'var(--muted)' }}>
-            {isEdit ? 'Tune every check behavior in one place.' : 'Create a monitor with detailed check, retry, and alert options.'}
+            {isGroup
+              ? 'A group has no health check of its own — its status rolls up from its children.'
+              : (isEdit ? 'Tune every check behavior in one place.' : 'Create a monitor with detailed check, retry, and alert options.')}
           </p>
         </div>
 
+        {isGroup ? (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+            <div style={{ padding: 14, border: '1px solid var(--border)', borderRadius: 'var(--radius-sm)' }}>
+              <div style={{ marginBottom: 12, fontSize: 12, color: 'var(--muted)', letterSpacing: '0.04em', textTransform: 'uppercase' }}>Group Basics</div>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+                <Select label="Type" value={form.monitor_type} onChange={e => set('monitor_type', e.target.value)}>
+                  <option value="http">HTTP</option>
+                  <option value="https">HTTPS</option>
+                  <option value="ping">Ping</option>
+                  <option value="tcp">TCP</option>
+                  <option value="dns">DNS</option>
+                  <option value="group">Group</option>
+                </Select>
+                <Input label="Name" placeholder="Production Services" value={form.name}
+                  onChange={e => set('name', e.target.value)} error={errors.name} />
+                <Input label="Icon (emoji or text)" placeholder="⬡" value={form.group_config.icon}
+                  onChange={e => setNested('group_config', 'icon', e.target.value)} />
+                <Input label="Color" placeholder="#00d97e" value={form.group_config.color}
+                  onChange={e => setNested('group_config', 'color', e.target.value)} />
+                <Select label="Parent Group (optional)" value={form.parent_group_id} onChange={e => set('parent_group_id', e.target.value)}>
+                  <option value="">None — top level</option>
+                  {selectableGroups.map(g => <option key={g.id} value={g.id}>{g.name}</option>)}
+                </Select>
+              </div>
+              <textarea
+                value={form.organization_config.description}
+                onChange={e => setNested('organization_config', 'description', e.target.value)}
+                placeholder="Description"
+                style={{ marginTop: 10, width: '100%', minHeight: 60, background: 'var(--surface-overlay)', border: '1px solid var(--border2)', borderRadius: 'var(--radius-input)', color: 'var(--text)', padding: 10 }}
+              />
+              <label style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 10, fontSize: 13 }}>
+                <input type="checkbox" checked={form.group_config.expanded_by_default}
+                  onChange={e => setNested('group_config', 'expanded_by_default', e.target.checked)} />
+                Expanded by default
+              </label>
+              <label style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 8, fontSize: 13 }}>
+                <input type="checkbox" checked={form.group_config.is_public}
+                  onChange={e => setNested('group_config', 'is_public', e.target.checked)} />
+                Visible on public status pages (still requires being added to a status page)
+              </label>
+            </div>
+
+            <div style={{ padding: 14, border: '1px solid var(--border)', borderRadius: 'var(--radius-sm)' }}>
+              <div style={{ marginBottom: 12, fontSize: 12, color: 'var(--muted)', letterSpacing: '0.04em', textTransform: 'uppercase' }}>Group Health Policy</div>
+              <Select label="How should this group's status be calculated?" value={form.group_config.health_policy}
+                onChange={e => setNested('group_config', 'health_policy', e.target.value)}>
+                {HEALTH_POLICIES.map(p => <option key={p.value} value={p.value}>{p.label}</option>)}
+              </Select>
+
+              {form.group_config.health_policy === 'percentage_threshold' && (
+                <div style={{ marginTop: 10 }}>
+                  <Input label="Down threshold (%)" type="number" min="1" max="100" value={form.group_config.percentage_threshold}
+                    onChange={e => setNested('group_config', 'percentage_threshold', e.target.value)} />
+                  <div style={{ fontSize: 11, color: 'var(--faint)', marginTop: 4 }}>
+                    Group shows Major Outage once {form.group_config.percentage_threshold || 0}% or more children are down.
+                  </div>
+                </div>
+              )}
+
+              {form.group_config.health_policy === 'custom_priority' && (
+                <div style={{ marginTop: 10 }}>
+                  <div style={{ fontSize: 11, color: 'var(--muted)', marginBottom: 8, textTransform: 'uppercase' }}>Critical monitors</div>
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+                    {selectableMonitors.length === 0 ? (
+                      <div style={{ fontSize: 12, color: 'var(--faint)' }}>No monitors available yet.</div>
+                    ) : selectableMonitors.map(m => (
+                      <button key={m.id} onClick={() => toggleCriticalMonitor(m.id)} style={{
+                        padding: '4px 10px', borderRadius: 'var(--radius-btn)', fontSize: 12, cursor: 'pointer',
+                        background: form.group_config.critical_monitor_ids.includes(m.id) ? 'var(--red-dim)' : 'var(--surface-raised)',
+                        border: `1px solid ${form.group_config.critical_monitor_ids.includes(m.id) ? 'rgba(255,84,104,0.35)' : 'var(--border)'}`,
+                        color: form.group_config.critical_monitor_ids.includes(m.id) ? 'var(--red)' : 'var(--muted)',
+                      }}>{m.name}</button>
+                    ))}
+                  </div>
+                  <div style={{ fontSize: 11, color: 'var(--faint)', marginTop: 8 }}>
+                    If any critical monitor is down, the group shows Major Outage regardless of the others.
+                  </div>
+                </div>
+              )}
+
+              <label style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 12, fontSize: 13 }}>
+                <input type="checkbox" checked={form.group_config.notify_on_group_status_change}
+                  onChange={e => setNested('group_config', 'notify_on_group_status_change', e.target.checked)} />
+                Notify on group status change
+              </label>
+            </div>
+          </div>
+        ) : (
         <div className="monitor-modal-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 18 }}>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
             <div style={{ padding: 14, border: '1px solid var(--border)', borderRadius: 'var(--radius-sm)' }}>
@@ -308,6 +450,7 @@ export default function MonitorModal({ monitor, onClose, onSaved }) {
                   <option value="ping">Ping</option>
                   <option value="tcp">TCP</option>
                   <option value="dns">DNS</option>
+                  <option value="group">Group</option>
                 </Select>
                 <Input label="Friendly Name" placeholder="Checkout API" value={form.name}
                   onChange={e => set('name', e.target.value)} error={errors.name} />
@@ -315,6 +458,10 @@ export default function MonitorModal({ monitor, onClose, onSaved }) {
                   onChange={e => set('target', e.target.value)} error={errors.target} />
                 <Input label="Port (if applicable)" type="number" placeholder="443" value={form.port}
                   onChange={e => set('port', e.target.value)} error={errors.port} />
+                <Select label="Parent Group (optional)" value={form.parent_group_id} onChange={e => set('parent_group_id', e.target.value)}>
+                  <option value="">None — ungrouped</option>
+                  {selectableGroups.map(g => <option key={g.id} value={g.id}>{g.name}</option>)}
+                </Select>
               </div>
             </div>
 
@@ -502,11 +649,12 @@ export default function MonitorModal({ monitor, onClose, onSaved }) {
             </div>
           </div>
         </div>
+        )}
 
         <div style={{ display: 'flex', gap: 10, marginTop: 20, justifyContent: 'flex-end' }}>
           <Button variant="ghost" onClick={onClose}>Cancel</Button>
           <Button variant="primary" onClick={submit} disabled={loading}>
-            {loading ? 'Saving...' : isEdit ? 'Save Changes' : 'Add Monitor'}
+            {loading ? 'Saving...' : isEdit ? 'Save Changes' : `Add ${isGroup ? 'Group' : 'Monitor'}`}
           </Button>
         </div>
 

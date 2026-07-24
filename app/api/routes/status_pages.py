@@ -16,6 +16,7 @@ from app.models.maintenance_window import MaintenanceWindow
 from app.schemas.status_page import StatusPageCreate, StatusPageUpdate, StatusPageOut
 from app.schemas.incident import IncidentOut
 from app.schemas.maintenance import MaintenanceOut
+from app.services import group_service
 
 router = APIRouter(tags=["status-pages"])
 
@@ -111,10 +112,29 @@ async def get_public_status_page(slug: str, db: AsyncSession = Depends(get_db)):
 
     monitor_ids = [int(i) for i in page.monitor_ids.split(",") if i.strip()] if page.monitor_ids else []
 
-    monitors_result = await db.execute(
+    selected_result = await db.execute(
         select(Monitor).where(Monitor.id.in_(monitor_ids), Monitor.is_active == True)  # noqa
     )
-    monitors = monitors_result.scalars().all()
+    selected = selected_result.scalars().all()
+
+    # Groups only surface publicly if the page owner both selected them *and* flagged
+    # them public — selection alone (like a leaf monitor) isn't enough for a group,
+    # since group_config.is_public exists specifically to hold a rollup back.
+    public_groups = [m for m in selected if m.monitor_type == "group" and (m.group_config or {}).get("is_public")]
+    monitors = [m for m in selected if m.monitor_type != "group"]
+
+    group_child_ids: dict[int, list[int]] = {}
+    known_ids = {m.id for m in monitors}
+    for g in public_groups:
+        children_result = await db.execute(
+            select(Monitor).where(Monitor.parent_group_id == g.id, Monitor.is_active == True)  # noqa
+        )
+        children = children_result.scalars().all()
+        group_child_ids[g.id] = [c.id for c in children]
+        for c in children:
+            if c.id not in known_ids:
+                monitors.append(c)
+                known_ids.add(c.id)
 
     since_90d = datetime.utcnow() - timedelta(days=90)
     since_24h = datetime.utcnow() - timedelta(hours=24)
@@ -211,10 +231,23 @@ async def get_public_status_page(slug: str, db: AsyncSession = Depends(get_db)):
     )
     maintenance = [MaintenanceOut.from_orm_obj(m) for m in maintenance_result.scalars().all()]
 
+    groups_data = []
+    for g in public_groups:
+        summary = await group_service.get_group_summary(db, g)
+        groups_data.append({
+            "id": g.id, "name": g.name,
+            "icon": (g.group_config or {}).get("icon"),
+            "color": (g.group_config or {}).get("color"),
+            "expanded_by_default": (g.group_config or {}).get("expanded_by_default", True),
+            "summary": summary,
+            "monitor_ids": group_child_ids.get(g.id, []),
+        })
+
     return {
         "page": StatusPageOut.from_orm_obj(page),
         "overall_status": overall,
         "monitors": monitors_data,
+        "groups": groups_data,
         "components": [
             {
                 "id": c.id, "name": c.name, "description": c.description,

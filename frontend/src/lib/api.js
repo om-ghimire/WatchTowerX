@@ -94,4 +94,16 @@ export const maintenanceApi = {
   remove:    (pageId, id)      => api.delete(`/status-pages/${pageId}/maintenance/${id}`),
 }
 
+// ── Monitor Groups ──────────────────────────────────────
+export const groupsApi = {
+  list:        ()               => api.get('/groups').then(r => r.data),
+  create:      (data)           => api.post('/groups', data).then(r => r.data),
+  update:      (id, data)       => api.patch(`/groups/${id}`, data).then(r => r.data),
+  remove:      (id)             => api.delete(`/groups/${id}`),
+  children:    (id)             => api.get(`/groups/${id}/children`).then(r => r.data),
+  addChild:    (id, monitorId)  => api.post(`/groups/${id}/children`, { monitor_id: monitorId }).then(r => r.data),
+  removeChild: (id, monitorId)  => api.delete(`/groups/${id}/children/${monitorId}`),
+  reorder:     (id, orderedIds) => api.patch(`/groups/${id}/children/reorder`, { ordered_monitor_ids: orderedIds }).then(r => r.data),
+}
+
 export default api

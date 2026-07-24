@@ -10,6 +10,7 @@ from app.db.session import AsyncSessionLocal
 from app.models.check_result import CheckResult
 from app.models.monitor import Monitor
 from app.models.alert_channel import AlertChannel
+from app.services import group_service
 
 async def _send_webhook_alert(channel_type: str, target: str, text: str) -> None:
     payload = {"text": text}
@@ -364,4 +365,8 @@ async def run_check(monitor_id: int) -> CheckResult:
         # Helper field for scheduler logs without extra DB round-trips.
         check.monitor_url = monitor.url  # type: ignore[attr-defined]
         await db.commit()
+
+        if monitor.parent_group_id is not None:
+            await group_service.invalidate_group_cache(db, monitor.parent_group_id)
+
         return check

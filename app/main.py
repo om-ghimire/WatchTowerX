@@ -8,6 +8,7 @@ from app.services.scheduler import start_scheduler, stop_scheduler
 from app.api.routes import auth, monitors, results
 from app.api.routes import alert_channels, status_pages
 from app.api.routes import status_page_components, incidents, maintenance
+from app.api.routes import groups
 
 logging.basicConfig(
     level=logging.INFO,
@@ -48,6 +49,7 @@ app.include_router(status_pages.router)
 app.include_router(status_page_components.router)
 app.include_router(incidents.router)
 app.include_router(maintenance.router)
+app.include_router(groups.router)
 
 
 @app.get("/health", tags=["health"])
