@@ -6,6 +6,7 @@ from datetime import datetime
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 
+from app.db.session import AsyncSessionLocal
 from app.models.check_result import CheckResult
 from app.models.monitor import Monitor
 from app.models.alert_channel import AlertChannel
@@ -286,12 +287,22 @@ async def ping_url(url: str) -> dict:
     return await _http_check(monitor)
 
 
-async def run_check(db: AsyncSession, monitor_id: int) -> CheckResult:
-    """Run a monitor check using monitor-local request/retry/notification configuration."""
-    result = await db.execute(select(Monitor).where(Monitor.id == monitor_id))
-    monitor = result.scalar_one_or_none()
-    if not monitor:
-        raise ValueError(f"Monitor {monitor_id} not found")
+async def run_check(monitor_id: int) -> CheckResult:
+    """Run a monitor check using monitor-local request/retry/notification configuration.
+
+    DB access is split into a short read (load config) and a short write
+    (persist result) with its own session each — the pooled connection must
+    not stay checked out for the full duration of the outbound network
+    check, since slow/unreachable targets (some monitors here run
+    60s+ timeouts with multiple retries) would otherwise hold a connection
+    for minutes and starve unrelated requests waiting on the same pool.
+    """
+    async with AsyncSessionLocal() as db:
+        result = await db.execute(select(Monitor).where(Monitor.id == monitor_id))
+        monitor = result.scalar_one_or_none()
+        if not monitor:
+            raise ValueError(f"Monitor {monitor_id} not found")
+        db.expunge(monitor)
 
     retry_cfg = monitor.retry_config or {}
     retry_attempts = max(int(retry_cfg.get("retry_attempts_before_down", 0)), 0)
@@ -310,44 +321,47 @@ async def run_check(db: AsyncSession, monitor_id: int) -> CheckResult:
 
     assert result_data is not None
 
-    if result_data["is_up"]:
-        monitor.consecutive_failures = 0
-        effective_is_up = True
-    else:
-        monitor.consecutive_failures = (monitor.consecutive_failures or 0) + 1
-        effective_is_up = monitor.consecutive_failures >= failure_threshold
-        effective_is_up = not effective_is_up
+    async with AsyncSessionLocal() as db:
+        monitor = await db.merge(monitor)
 
-    monitor.is_up = effective_is_up
-    monitor.last_checked_at = datetime.utcnow()
-    if not effective_is_up:
-        monitor.last_failure_at = monitor.last_checked_at
+        if result_data["is_up"]:
+            monitor.consecutive_failures = 0
+            effective_is_up = True
+        else:
+            monitor.consecutive_failures = (monitor.consecutive_failures or 0) + 1
+            effective_is_up = monitor.consecutive_failures >= failure_threshold
+            effective_is_up = not effective_is_up
 
-    if result_data["is_up"] is False and effective_is_up is True:
-        threshold_msg = f"Failure threshold not reached ({monitor.consecutive_failures}/{failure_threshold})"
-        result_data["error"] = f"{threshold_msg}: {result_data['error'] or 'transient failure'}"
+        monitor.is_up = effective_is_up
+        monitor.last_checked_at = datetime.utcnow()
+        if not effective_is_up:
+            monitor.last_failure_at = monitor.last_checked_at
 
-    check = CheckResult(
-        monitor_id=monitor_id,
-        is_up=effective_is_up,
-        status_code=result_data["status_code"],
-        response_time_ms=result_data["response_time_ms"],
-        error=result_data["error"],
-        checked_at=monitor.last_checked_at,
-    )
-    db.add(check)
-    await db.flush()
+        if result_data["is_up"] is False and effective_is_up is True:
+            threshold_msg = f"Failure threshold not reached ({monitor.consecutive_failures}/{failure_threshold})"
+            result_data["error"] = f"{threshold_msg}: {result_data['error'] or 'transient failure'}"
 
-    await _maybe_send_monitor_notifications(
-        db=db,
-        monitor=monitor,
-        is_up=effective_is_up,
-        was_up=was_up,
-        error=result_data["error"],
-        status_code=result_data["status_code"],
-    )
+        check = CheckResult(
+            monitor_id=monitor_id,
+            is_up=effective_is_up,
+            status_code=result_data["status_code"],
+            response_time_ms=result_data["response_time_ms"],
+            error=result_data["error"],
+            checked_at=monitor.last_checked_at,
+        )
+        db.add(check)
+        await db.flush()
 
-    # Helper field for scheduler logs without extra DB round-trips.
-    check.monitor_url = monitor.url  # type: ignore[attr-defined]
-    await db.commit()
-    return check
+        await _maybe_send_monitor_notifications(
+            db=db,
+            monitor=monitor,
+            is_up=effective_is_up,
+            was_up=was_up,
+            error=result_data["error"],
+            status_code=result_data["status_code"],
+        )
+
+        # Helper field for scheduler logs without extra DB round-trips.
+        check.monitor_url = monitor.url  # type: ignore[attr-defined]
+        await db.commit()
+        return check

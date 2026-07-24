@@ -31,7 +31,7 @@ async def create_monitor(
     schedule_monitor(monitor.id, monitor_service.interval_seconds_for_monitor(monitor))
 
     # Run one immediate validation so users don't wait for the first interval.
-    await run_check(db, monitor.id)
+    await run_check(monitor.id)
 
     refreshed = await monitor_service.get_monitor(db, monitor.id, get_account_owner_id(current_user))
     return refreshed or monitor

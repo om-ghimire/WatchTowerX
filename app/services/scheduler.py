@@ -16,16 +16,15 @@ def make_job_id(monitor_id: int) -> str:
 
 
 async def _check_monitor(monitor_id: int):
-    async with AsyncSessionLocal() as db:
-        try:
-            result = await run_check(db, monitor_id)
-            status = "UP" if result.is_up else "DOWN"
-            logger.info(
-                f"[monitor {monitor_id}] {result.monitor_url} → {status} "
-                f"({result.response_time_ms}ms, HTTP {result.status_code})"
-            )
-        except Exception as e:
-            logger.error(f"[monitor {monitor_id}] check failed: {e}")
+    try:
+        result = await run_check(monitor_id)
+        status = "UP" if result.is_up else "DOWN"
+        logger.info(
+            f"[monitor {monitor_id}] {result.monitor_url} → {status} "
+            f"({result.response_time_ms}ms, HTTP {result.status_code})"
+        )
+    except Exception as e:
+        logger.error(f"[monitor {monitor_id}] check failed: {e}")
 
 
 def schedule_monitor(monitor_id: int, interval_seconds: int):
