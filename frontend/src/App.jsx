@@ -1,6 +1,7 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { useAuth } from './lib/auth'
 import Sidebar from './components/ui/Sidebar'
+import CommandPalette from './components/ui/CommandPalette'
 import AuthPage from './pages/AuthPage'
 import DashboardPage from './pages/DashboardPage'
 import MonitorsPage from './pages/MonitorsPage'
@@ -14,6 +15,7 @@ function ProtectedLayout() {
   return (
     <div style={{ display: 'flex', height: '100vh', overflow: 'hidden' }}>
       <Sidebar />
+      <CommandPalette />
       <main style={{ flex: 1, overflowY: 'auto', background: 'var(--bg)' }}>
         <Routes>
           <Route path="/"           element={<DashboardPage />} />

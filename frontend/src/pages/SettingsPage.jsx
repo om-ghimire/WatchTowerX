@@ -1,7 +1,7 @@
 import { useState, useCallback, useEffect } from 'react'
 import { alertsApi, authApi, statusPagesApi, monitorsApi } from '../lib/api'
 import { useAuth } from '../lib/auth'
-import { Button, Input, Select, Spinner, Card } from '../components/ui'
+import { Button, Input, Select, Spinner, Panel } from '../components/ui'
 
 function ChannelCard({ ch, monitors, canEdit, onDeleted }) {
   const [testing, setTesting] = useState(false)
@@ -29,18 +29,18 @@ function ChannelCard({ ch, monitors, canEdit, onDeleted }) {
     : 'All monitors'
 
   return (
-    <Card style={{ padding: '20px 22px' }}>
+    <Panel style={{ padding: '20px 22px' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 14 }}>
         <div>
           <div style={{ fontWeight: 600, fontSize: 15, marginBottom: 4 }}>{ch.name}</div>
           <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-            <span style={{ fontSize: 11, color: 'var(--blue)', background: 'rgba(77,159,255,0.1)', border: '1px solid rgba(77,159,255,0.2)', borderRadius: 5, padding: '2px 8px' }}>
+            <span style={{ fontSize: 11, color: 'var(--cyan)', background: 'var(--cyan-dim)', border: '1px solid rgba(63,196,255,0.25)', borderRadius: 'var(--radius-input)', padding: '2px 8px' }}>
               {ch.channel_type.toUpperCase()}
             </span>
-            <span style={{ fontSize: 11, color: 'var(--muted)', background: 'rgba(255,255,255,0.05)', borderRadius: 5, padding: '2px 8px' }}>
+            <span style={{ fontSize: 11, color: 'var(--muted)', background: 'var(--surface-raised)', borderRadius: 'var(--radius-input)', padding: '2px 8px' }}>
               {monitorName}
             </span>
-            <span style={{ fontSize: 11, color: ch.alert_on_immediate ? 'var(--yellow)' : 'var(--purple)', background: ch.alert_on_immediate ? 'rgba(255,210,63,0.1)' : 'rgba(181,123,255,0.1)', borderRadius: 5, padding: '2px 8px' }}>
+            <span style={{ fontSize: 11, color: ch.alert_on_immediate ? 'var(--amber)' : 'var(--cyan)', background: ch.alert_on_immediate ? 'var(--amber-dim)' : 'var(--cyan-dim)', borderRadius: 'var(--radius-input)', padding: '2px 8px' }}>
               {ch.alert_on_immediate ? 'Immediate' : `After ${ch.retry_count} failures`}
             </span>
           </div>
@@ -56,7 +56,7 @@ function ChannelCard({ ch, monitors, canEdit, onDeleted }) {
       <div style={{ fontSize: 12, color: 'var(--faint)', fontFamily: 'var(--font-mono)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
         {ch.webhook_url}
       </div>
-    </Card>
+    </Panel>
   )
 }
 
@@ -89,7 +89,7 @@ function AddChannelForm({ onSaved, onCancel }) {
   }
 
   return (
-    <Card style={{ padding: '24px', border: '1px solid rgba(0,245,160,0.2)' }}>
+    <Panel style={{ padding: '24px', border: '1px solid rgba(0,217,126,0.25)' }}>
       <div style={{ fontWeight: 600, fontSize: 15, marginBottom: 20, color: 'var(--green)' }}>New Alert Channel</div>
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, marginBottom: 16 }}>
         <Input label="Channel name" placeholder="e.g. My Teams Channel" value={form.name} onChange={e => set('name', e.target.value)} error={errors.name} />
@@ -107,7 +107,7 @@ function AddChannelForm({ onSaved, onCancel }) {
         <Button variant="ghost" onClick={onCancel}>Cancel</Button>
         <Button variant="primary" onClick={submit} disabled={loading}>{loading ? 'Saving…' : 'Add Channel'}</Button>
       </div>
-    </Card>
+    </Panel>
   )
 }
 
@@ -197,7 +197,7 @@ function StatusPageSection({ monitors, canEdit }) {
       </div>
 
       {showForm && canEdit && (
-        <Card style={{ padding: '24px', marginBottom: 16, border: '1px solid rgba(0,245,160,0.2)' }}>
+        <Panel style={{ padding: '24px', marginBottom: 16, border: '1px solid rgba(0,217,126,0.25)' }}>
           <div style={{ fontWeight: 600, fontSize: 15, marginBottom: 20, color: 'var(--green)' }}>
             {isEditing ? 'Edit Status Page' : 'New Status Page'}
           </div>
@@ -230,9 +230,9 @@ function StatusPageSection({ monitors, canEdit }) {
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
               {monitors.map(m => (
                 <button key={m.id} onClick={() => toggleMonitor(m.id)} style={{
-                  padding: '6px 14px', borderRadius: 8, fontSize: 13, cursor: 'pointer',
-                  background: form.monitor_ids.includes(m.id) ? 'var(--green-dim)' : 'rgba(255,255,255,0.04)',
-                  border: `1px solid ${form.monitor_ids.includes(m.id) ? 'rgba(0,245,160,0.3)' : 'var(--border)'}`,
+                  padding: '6px 14px', borderRadius: 'var(--radius-btn)', fontSize: 13, cursor: 'pointer',
+                  background: form.monitor_ids.includes(m.id) ? 'var(--green-dim)' : 'var(--surface-raised)',
+                  border: `1px solid ${form.monitor_ids.includes(m.id) ? 'rgba(0,217,126,0.35)' : 'var(--border)'}`,
                   color: form.monitor_ids.includes(m.id) ? 'var(--green)' : 'var(--muted)',
                   transition: 'all 0.18s',
                 }}>{m.name}</button>
@@ -245,17 +245,17 @@ function StatusPageSection({ monitors, canEdit }) {
               {saving ? (isEditing ? 'Saving…' : 'Creating…') : (isEditing ? 'Save Changes' : 'Create Page')}
             </Button>
           </div>
-        </Card>
+        </Panel>
       )}
 
       {loading ? <Spinner size={24} /> : pages.length === 0 ? (
-        <div style={{ padding: '32px', textAlign: 'center', color: 'var(--muted)', fontSize: 13, border: '1px dashed var(--border)', borderRadius: 14 }}>
+        <div style={{ padding: '32px', textAlign: 'center', color: 'var(--muted)', fontSize: 13, border: '1px dashed var(--border)', borderRadius: 'var(--radius-sm)' }}>
           No status pages yet. Create one to share your uptime publicly.
         </div>
       ) : (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
           {pages.map(p => (
-            <Card key={p.id} style={{ padding: '18px 22px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <Panel key={p.id} style={{ padding: '18px 22px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <div>
                 <div style={{ fontWeight: 600, fontSize: 14, marginBottom: 4 }}>{p.title}</div>
                 <a href={`/status/${p.slug}`} target="_blank" rel="noreferrer"
@@ -273,7 +273,7 @@ function StatusPageSection({ monitors, canEdit }) {
                   <Button size="sm" variant="danger" onClick={() => deletePage(p.id)}>Delete</Button>
                 </div>
               )}
-            </Card>
+            </Panel>
           ))}
         </div>
       )}
@@ -332,7 +332,7 @@ function TeamMembersSection({ currentUser }) {
       </div>
 
       {adding && (
-        <Card style={{ padding: 20, marginBottom: 16, border: '1px solid rgba(0,245,160,0.2)' }}>
+        <Panel style={{ padding: 20, marginBottom: 16, border: '1px solid rgba(0,217,126,0.25)' }}>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 180px', gap: 10 }}>
             <Input label="Email" value={form.email} onChange={e => setForm(f => ({ ...f, email: e.target.value }))} />
             <Input label="Password" type="password" value={form.password} onChange={e => setForm(f => ({ ...f, password: e.target.value }))} />
@@ -347,13 +347,13 @@ function TeamMembersSection({ currentUser }) {
             <Button variant="ghost" onClick={() => setAdding(false)}>Cancel</Button>
             <Button variant="primary" onClick={createStaff} disabled={saving}>{saving ? 'Adding…' : 'Create Staff Account'}</Button>
           </div>
-        </Card>
+        </Panel>
       )}
 
       {loading ? <Spinner size={24} /> : (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
           {staff.map(member => (
-            <Card key={member.id} style={{ padding: 16, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <Panel key={member.id} style={{ padding: 16, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <div>
                 <div style={{ fontWeight: 600, fontSize: 14 }}>{member.full_name || member.email}</div>
                 <div style={{ fontSize: 12, color: 'var(--muted)' }}>{member.email}</div>
@@ -368,7 +368,7 @@ function TeamMembersSection({ currentUser }) {
                   <Button size="sm" variant="danger" onClick={() => removeStaff(member.id, member.full_name || member.email)}>Remove</Button>
                 )}
               </div>
-            </Card>
+            </Panel>
           ))}
         </div>
       )}
@@ -449,7 +449,7 @@ export default function SettingsPage() {
           )}
 
           {channels.length === 0 && !showForm ? (
-            <div style={{ padding: '40px', textAlign: 'center', color: 'var(--muted)', fontSize: 13, border: '1px dashed var(--border)', borderRadius: 14 }}>
+            <div style={{ padding: '40px', textAlign: 'center', color: 'var(--muted)', fontSize: 13, border: '1px dashed var(--border)', borderRadius: 'var(--radius-sm)' }}>
               No alert channels yet. Add one to receive downtime notifications.
             </div>
           ) : (

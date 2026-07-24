@@ -1,56 +1,47 @@
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useMemo } from 'react'
 import { monitorsApi, resultsApi } from '../lib/api'
 import { useAutoRefresh } from '../hooks/useAutoRefresh'
 import MonitorModal from '../components/monitors/MonitorModal'
-import { Button, Spinner, UptimeBar } from '../components/ui'
-
-function StatPill({ label, value, color }) {
-  return (
-    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2 }}>
-      <span style={{ fontFamily: 'var(--font-mono)', fontSize: 22, fontWeight: 700, color }}>{value}</span>
-      <span style={{ fontSize: 10, color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '0.06em' }}>{label}</span>
-    </div>
-  )
-}
+import SummaryCards from '../components/dashboard/SummaryCards'
+import ResponseTimeChart from '../components/dashboard/ResponseTimeChart'
+import IncidentsList from '../components/dashboard/IncidentsList'
+import { Button, Panel, Spinner, UptimeBar } from '../components/ui'
 
 function MonitorRow({ monitor, results, stats, onEdit }) {
   const uptime = stats?.uptime_percent
   const avg    = stats?.avg_response_ms
   return (
     <div style={{
-      display: 'grid', gridTemplateColumns: '28px 1fr 160px 90px 90px 110px',
-      alignItems: 'center', gap: 16, padding: '16px 24px',
-      borderBottom: '1px solid var(--border)', transition: 'background 0.15s',
+      display: 'grid', gridTemplateColumns: '20px 1fr 140px 80px 80px 90px',
+      alignItems: 'center', gap: 14, padding: '13px 20px',
+      borderBottom: '1px solid var(--border-subtle)', transition: 'background 0.15s',
     }}
-    onMouseEnter={e => e.currentTarget.style.background = 'rgba(255,255,255,0.025)'}
+    onMouseEnter={e => e.currentTarget.style.background = 'var(--surface-raised)'}
     onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
     >
       <div style={{
-        width: 12, height: 12, borderRadius: '50%', flexShrink: 0,
+        width: 8, height: 8, borderRadius: '50%', flexShrink: 0,
         background: monitor.is_up === null ? 'var(--faint)' : monitor.is_up ? 'var(--green)' : 'var(--red)',
-        boxShadow: monitor.is_up ? '0 0 8px var(--green)' : monitor.is_up === false ? '0 0 8px var(--red)' : 'none',
+        boxShadow: monitor.is_up ? 'var(--shadow-glow-green)' : monitor.is_up === false ? 'var(--shadow-glow-red)' : 'none',
         animation: monitor.is_up !== null ? 'pulse-dot 2.5s ease-in-out infinite' : 'none',
       }} />
       <div style={{ minWidth: 0 }}>
-        <div style={{ fontWeight: 600, fontSize: 14, marginBottom: 2 }}>{monitor.name}</div>
-        <div style={{ fontSize: 12, color: 'var(--muted)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{monitor.url}</div>
+        <div style={{ fontWeight: 600, fontSize: 13, marginBottom: 2 }}>{monitor.name}</div>
+        <div style={{ fontSize: 11, color: 'var(--muted)', fontFamily: 'var(--font-mono)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{monitor.url}</div>
       </div>
       <div>
         <UptimeBar results={results || []} />
-        <div style={{ fontSize: 10, color: 'var(--faint)', marginTop: 4, textAlign: 'right' }}>Last 90 recorded checks</div>
       </div>
       <div style={{ textAlign: 'center' }}>
-        <div style={{ fontFamily: 'var(--font-mono)', fontSize: 15, fontWeight: 700, color: uptime >= 99 ? 'var(--green)' : uptime >= 90 ? 'var(--yellow)' : 'var(--red)' }}>
+        <div style={{ fontFamily: 'var(--font-mono)', fontSize: 13, fontWeight: 700, color: uptime >= 99 ? 'var(--green)' : uptime >= 90 ? 'var(--amber)' : 'var(--red)' }}>
           {uptime != null ? `${uptime}%` : '—'}
         </div>
-        <div style={{ fontSize: 10, color: 'var(--muted)', marginTop: 2 }}>uptime</div>
       </div>
       <div style={{ textAlign: 'center' }}>
-        <div style={{ fontFamily: 'var(--font-mono)', fontSize: 15, fontWeight: 700, color: 'var(--blue)' }}>{avg ? `${avg}ms` : '—'}</div>
-        <div style={{ fontSize: 10, color: 'var(--muted)', marginTop: 2 }}>Avg response (last 24h)</div>
+        <div style={{ fontFamily: 'var(--font-mono)', fontSize: 13, fontWeight: 700, color: 'var(--cyan)' }}>{avg ? `${avg}ms` : '—'}</div>
       </div>
       <div style={{ display: 'flex', gap: 6, justifyContent: 'flex-end', alignItems: 'center' }}>
-        {!monitor.is_active && <span style={{ fontSize: 10, color: 'var(--yellow)', background: 'rgba(255,210,63,0.1)', border: '1px solid rgba(255,210,63,0.2)', borderRadius: 4, padding: '2px 6px' }}>PAUSED</span>}
+        {!monitor.is_active && <span style={{ fontSize: 10, color: 'var(--amber)', background: 'var(--amber-dim)', border: '1px solid rgba(255,181,69,0.25)', borderRadius: 4, padding: '2px 6px' }}>PAUSED</span>}
         <Button size="sm" variant="ghost" onClick={onEdit} style={{ padding: '4px 10px', fontSize: 12 }}>Edit</Button>
       </div>
     </div>
@@ -82,22 +73,31 @@ export default function DashboardPage() {
   const total = monitors.length
   const up    = monitors.filter(m => m.is_up === true).length
   const down  = monitors.filter(m => m.is_up === false).length
-  const avgUp = total > 0 ? Math.round((up / Math.max(total - monitors.filter(m => m.is_up === null).length, 1)) * 100) : 0
+
+  // Pick the monitor to feature in the telemetry chart: prefer a currently-down
+  // one, else the slowest by average response time, else the first monitor.
+  const featured = useMemo(() => {
+    if (monitors.length === 0) return null
+    const downMonitor = monitors.find(m => m.is_up === false)
+    if (downMonitor) return downMonitor
+    const bySpeed = [...monitors].sort((a, b) => (allStats[b.id]?.avg_response_ms || 0) - (allStats[a.id]?.avg_response_ms || 0))
+    return bySpeed[0]
+  }, [monitors, allStats])
+
+  const incidentsFeed = monitors.map(m => ({ monitorId: m.id, results: allResults[m.id] || [] }))
 
   return (
     <div style={{ flex: 1, overflowY: 'auto' }}>
       {/* Top bar */}
-      <div style={{ padding: '24px 32px', borderBottom: '1px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: 'var(--bg2)' }} className="fade-up">
-        <div style={{ display: 'flex', gap: 48 }}>
-          <StatPill label="Total"     value={total} color="var(--text)" />
-          <StatPill label="Up"        value={up}    color="var(--green)" />
-          <StatPill label="Down"      value={down}  color={down > 0 ? 'var(--red)' : 'var(--muted)'} />
-          <StatPill label="Avg Uptime" value={`${avgUp}%`} color="var(--purple)" />
+      <div style={{ padding: '20px 28px', borderBottom: '1px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }} className="fade-up">
+        <div>
+          <h1 style={{ fontSize: 18, fontWeight: 700 }}>Dashboard</h1>
+          <div style={{ fontSize: 12, color: 'var(--muted)', marginTop: 2 }}>{total} monitor{total !== 1 ? 's' : ''} watched</div>
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
           <div style={{ textAlign: 'right' }}>
-            <div style={{ fontSize: 11, color: 'var(--muted)' }}>Refresh in</div>
-            <div style={{ fontFamily: 'var(--font-mono)', fontSize: 18, color: 'var(--green)' }}>{secondsLeft}s</div>
+            <div style={{ fontSize: 10, color: 'var(--faint)', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Refresh in</div>
+            <div style={{ fontFamily: 'var(--font-mono)', fontSize: 15, color: 'var(--green)' }}>{secondsLeft}s</div>
           </div>
           <Button variant="primary" onClick={() => setShowAdd(true)}>+ Add Monitor</Button>
         </div>
@@ -105,42 +105,47 @@ export default function DashboardPage() {
 
       {/* Status banner */}
       {!loading && monitors.length > 0 && (
-        <div className="fade-up-2" style={{
-          margin: '24px 32px 0', padding: '16px 24px', borderRadius: 14,
-          display: 'flex', alignItems: 'center', gap: 14,
-          background: down === 0 ? 'rgba(0,245,160,0.07)' : 'rgba(255,77,106,0.07)',
-          border: `1px solid ${down === 0 ? 'rgba(0,245,160,0.2)' : 'rgba(255,77,106,0.2)'}`,
-        }}>
-          <div style={{ width: 10, height: 10, borderRadius: '50%', background: down === 0 ? 'var(--green)' : 'var(--red)', boxShadow: `0 0 10px ${down === 0 ? 'var(--green)' : 'var(--red)'}`, animation: 'pulse-dot 2s ease-in-out infinite' }} />
-          <span style={{ fontWeight: 600, fontSize: 14, color: down === 0 ? 'var(--green)' : 'var(--red)' }}>
-            {down === 0 ? 'All systems operational' : `${down} monitor${down > 1 ? 's' : ''} down`}
-          </span>
-          {down > 0 && <span style={{ fontSize: 13, color: 'var(--muted)' }}>— {monitors.filter(m => m.is_up === false).map(m => m.name).join(', ')}</span>}
+        <div className="fade-up-2" style={{ margin: '20px 28px 0' }}>
+          <Panel accent={down === 0 ? 'green' : 'red'} style={{
+            padding: '13px 18px', display: 'flex', alignItems: 'center', gap: 12,
+          }}>
+            <div style={{ width: 7, height: 7, borderRadius: '50%', background: down === 0 ? 'var(--green)' : 'var(--red)', boxShadow: down === 0 ? 'var(--shadow-glow-green)' : 'var(--shadow-glow-red)', animation: 'pulse-dot 2s ease-in-out infinite' }} />
+            <span style={{ fontWeight: 600, fontSize: 13, color: down === 0 ? 'var(--green)' : 'var(--red)' }}>
+              {down === 0 ? 'All systems operational' : `${down} monitor${down > 1 ? 's' : ''} down`}
+            </span>
+            {down > 0 && <span style={{ fontSize: 12, color: 'var(--muted)' }}>— {monitors.filter(m => m.is_up === false).map(m => m.name).join(', ')}</span>}
+          </Panel>
         </div>
       )}
 
-      {/* Monitor table */}
-      <div style={{ margin: '20px 32px' }} className="fade-up-3">
-        {loading ? (
-          <div style={{ display: 'flex', justifyContent: 'center', paddingTop: 80 }}><Spinner size={36} /></div>
-        ) : monitors.length === 0 ? (
-          <div style={{ textAlign: 'center', paddingTop: 80 }}>
-            <div style={{ fontSize: 48, marginBottom: 16 }}>◎</div>
-            <h2 style={{ fontSize: 20, fontWeight: 600, marginBottom: 8 }}>No monitors yet</h2>
-            <p style={{ color: 'var(--muted)', marginBottom: 24 }}>Add your first URL to start watching uptime.</p>
-            <Button variant="primary" onClick={() => setShowAdd(true)}>+ Add your first monitor</Button>
-          </div>
-        ) : (
-          <div style={{ background: 'var(--bg2)', border: '1px solid var(--border)', borderRadius: 16, overflow: 'hidden' }}>
-            <div style={{ display: 'grid', gridTemplateColumns: '28px 1fr 160px 90px 90px 110px', gap: 16, padding: '12px 24px', background: 'rgba(255,255,255,0.02)', borderBottom: '1px solid var(--border)', fontSize: 11, color: 'var(--faint)', textTransform: 'uppercase', letterSpacing: '0.06em' }}>
-              <div /><div>Monitor</div><div>Recent checks</div><div style={{textAlign:'center'}}>Uptime</div><div style={{textAlign:'center'}}>Avg response (last 24h)</div><div />
+      {/* Dominant panel + telemetry column */}
+      {loading ? (
+        <div style={{ display: 'flex', justifyContent: 'center', paddingTop: 80 }}><Spinner size={36} /></div>
+      ) : monitors.length === 0 ? (
+        <div style={{ textAlign: 'center', paddingTop: 80 }}>
+          <div style={{ fontSize: 40, marginBottom: 16, color: 'var(--faint)' }}>◎</div>
+          <h2 style={{ fontSize: 18, fontWeight: 600, marginBottom: 8 }}>No monitors yet</h2>
+          <p style={{ color: 'var(--muted)', marginBottom: 24, fontSize: 13 }}>Add your first URL to start watching uptime.</p>
+          <Button variant="primary" onClick={() => setShowAdd(true)}>+ Add your first monitor</Button>
+        </div>
+      ) : (
+        <div className="fade-up-3" style={{ margin: '16px 28px 28px', display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) 300px', gap: 16, alignItems: 'start' }}>
+          <Panel style={{ overflow: 'hidden' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: '20px 1fr 140px 80px 80px 90px', gap: 14, padding: '10px 20px', background: 'var(--surface-raised)', borderBottom: '1px solid var(--border)', fontSize: 10, color: 'var(--faint)', textTransform: 'uppercase', letterSpacing: '0.06em' }}>
+              <div /><div>Monitor</div><div>Recent checks</div><div style={{textAlign:'center'}}>Uptime</div><div style={{textAlign:'center'}}>Avg (24h)</div><div />
             </div>
             {monitors.map(m => (
               <MonitorRow key={m.id} monitor={m} results={allResults[m.id]} stats={allStats[m.id]} onEdit={() => setEdit(m)} />
             ))}
+          </Panel>
+
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+            <SummaryCards monitors={monitors} />
+            {featured && <ResponseTimeChart results={allResults[featured.id] || []} monitorName={featured.name} />}
+            <IncidentsList allResults={incidentsFeed} monitors={monitors} />
           </div>
-        )}
-      </div>
+        </div>
+      )}
 
       {showAdd     && <MonitorModal onClose={() => setShowAdd(false)} onSaved={fetchAll} />}
       {editMonitor && <MonitorModal monitor={editMonitor} onClose={() => setEdit(null)} onSaved={fetchAll} />}

@@ -1,7 +1,7 @@
 import { useState, useCallback } from 'react'
 import { monitorsApi, resultsApi } from '../lib/api'
 import { useAutoRefresh } from '../hooks/useAutoRefresh'
-import { Card, Spinner } from '../components/ui'
+import { Panel, Spinner } from '../components/ui'
 import { formatDistanceToNow, format } from 'date-fns'
 
 export default function IncidentsPage() {
@@ -48,7 +48,7 @@ export default function IncidentsPage() {
           <p style={{ color: 'var(--muted)' }}>All your monitors are reporting healthy.</p>
         </div>
       ) : (
-        <Card className="fade-up-2" style={{ padding: '8px 0', overflow: 'hidden' }}>
+        <Panel className="fade-up-2" style={{ padding: '8px 0', overflow: 'hidden' }}>
           {/* Table header */}
           <div style={{
             display: 'grid', gridTemplateColumns: '2fr 2fr 1fr 1fr 1.5fr',
@@ -74,7 +74,7 @@ export default function IncidentsPage() {
                 {inc.error || '—'}
               </div>
               <div style={{ alignSelf: 'center' }}>
-                <span style={{ fontFamily: 'var(--font-mono)', fontSize: 12, color: inc.status_code ? 'var(--yellow)' : 'var(--red)' }}>
+                <span style={{ fontFamily: 'var(--font-mono)', fontSize: 12, color: inc.status_code ? 'var(--amber)' : 'var(--red)' }}>
                   {inc.status_code || 'n/a'}
                 </span>
               </div>
@@ -91,7 +91,7 @@ export default function IncidentsPage() {
               </div>
             </div>
           ))}
-        </Card>
+        </Panel>
       )}
     </div>
   )

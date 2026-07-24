@@ -282,10 +282,10 @@ export default function MonitorModal({ monitor, onClose, onSaved }) {
       zIndex: 100, backdropFilter: 'blur(4px)',
     }} onClick={e => e.target === e.currentTarget && onClose()}>
       <div style={{
-        background: 'var(--bg2)', border: '1px solid var(--border2)',
-        borderRadius: 20, padding: '28px', width: 'min(1240px, 96vw)', maxHeight: '92vh', overflowY: 'auto',
-        boxShadow: '0 24px 80px rgba(0,0,0,0.6)',
-        animation: 'fade-up 0.25s ease',
+        background: 'var(--surface-overlay)', border: '1px solid var(--border2)',
+        borderRadius: 'var(--radius-modal)', padding: '28px', width: 'min(1240px, 96vw)', maxHeight: '92vh', overflowY: 'auto',
+        boxShadow: 'var(--shadow-soft)',
+        animation: 'fade-up 0.2s ease',
       }}>
         <div style={{ marginBottom: 18 }}>
           <h2 style={{ fontSize: 18, fontWeight: 700, marginBottom: 4 }}>
@@ -298,7 +298,7 @@ export default function MonitorModal({ monitor, onClose, onSaved }) {
 
         <div className="monitor-modal-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 18 }}>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
-            <div style={{ padding: 14, border: '1px solid var(--border)', borderRadius: 12 }}>
+            <div style={{ padding: 14, border: '1px solid var(--border)', borderRadius: 'var(--radius-sm)' }}>
               <div style={{ marginBottom: 12, fontSize: 12, color: 'var(--muted)', letterSpacing: '0.04em', textTransform: 'uppercase' }}>Monitor Basics</div>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: 10 }}>
                 <Select label="Monitor Type" value={form.monitor_type}
@@ -318,7 +318,7 @@ export default function MonitorModal({ monitor, onClose, onSaved }) {
               </div>
             </div>
 
-            <div style={{ padding: 14, border: '1px solid var(--border)', borderRadius: 12 }}>
+            <div style={{ padding: 14, border: '1px solid var(--border)', borderRadius: 'var(--radius-sm)' }}>
               <div style={{ marginBottom: 12, fontSize: 12, color: 'var(--muted)', letterSpacing: '0.04em', textTransform: 'uppercase' }}>Heartbeat & Retries</div>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: 10 }}>
                 <div>
@@ -354,7 +354,7 @@ export default function MonitorModal({ monitor, onClose, onSaved }) {
               </div>
             </div>
 
-            <div style={{ padding: 14, border: '1px solid var(--border)', borderRadius: 12 }}>
+            <div style={{ padding: 14, border: '1px solid var(--border)', borderRadius: 'var(--radius-sm)' }}>
               <div style={{ marginBottom: 12, fontSize: 12, color: 'var(--muted)', letterSpacing: '0.04em', textTransform: 'uppercase' }}>Advanced</div>
               <label style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 4, fontSize: 13 }}>
                 <input type="checkbox" checked={form.advanced_config.ignore_ssl_errors}
@@ -372,7 +372,7 @@ export default function MonitorModal({ monitor, onClose, onSaved }) {
           </div>
 
           <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
-            <div style={{ padding: 14, border: '1px solid var(--border)', borderRadius: 12 }}>
+            <div style={{ padding: 14, border: '1px solid var(--border)', borderRadius: 'var(--radius-sm)' }}>
               <div style={{ marginBottom: 12, fontSize: 12, color: 'var(--muted)', letterSpacing: '0.04em', textTransform: 'uppercase' }}>Notifications</div>
               <label style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10, fontSize: 13 }}>
                 <input type="checkbox" checked={form.notification_config.enabled}
@@ -401,8 +401,8 @@ export default function MonitorModal({ monitor, onClose, onSaved }) {
                 ) : assignedChannels.map(ch => (
                   <div key={ch.id} style={{
                     display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                    border: '1px solid var(--border2)', borderRadius: 8, padding: '8px 10px',
-                    background: 'rgba(255,255,255,0.03)'
+                    border: '1px solid var(--border2)', borderRadius: 'var(--radius-input)', padding: '8px 10px',
+                    background: 'var(--surface-raised)'
                   }}>
                     <span style={{ fontSize: 13 }}>{ch.name} ({ch.channel_type.toUpperCase()})</span>
                     <button
@@ -434,7 +434,7 @@ export default function MonitorModal({ monitor, onClose, onSaved }) {
               </label>
             </div>
 
-            <div style={{ padding: 14, border: '1px solid var(--border)', borderRadius: 12 }}>
+            <div style={{ padding: 14, border: '1px solid var(--border)', borderRadius: 'var(--radius-sm)' }}>
               <div style={{ marginBottom: 12, fontSize: 12, color: 'var(--muted)', letterSpacing: '0.04em', textTransform: 'uppercase' }}>HTTP Options</div>
               {!isHttpMonitor && (
                 <div style={{ fontSize: 12, color: 'var(--faint)', marginBottom: 10 }}>
@@ -455,19 +455,19 @@ export default function MonitorModal({ monitor, onClose, onSaved }) {
                 value={form.request_config.body}
                 onChange={e => setNested('request_config', 'body', e.target.value)}
                 placeholder={'Body (optional)\n{\n  "key": "value"\n}'}
-                style={{ marginTop: 10, width: '100%', minHeight: 110, background: 'rgba(255,255,255,0.04)', border: '1px solid var(--border2)', borderRadius: 10, color: 'var(--text)', padding: 10 }}
+                style={{ marginTop: 10, width: '100%', minHeight: 110, background: 'var(--surface-overlay)', border: '1px solid var(--border2)', borderRadius: 'var(--radius-input)', color: 'var(--text)', padding: 10 }}
               />
               <textarea
                 value={form.request_config.headers_text}
                 onChange={e => setNested('request_config', 'headers_text', e.target.value)}
                 placeholder={'Headers (one per line)\nAuthorization: Bearer token\nX-Trace-ID: watchtower'}
-                style={{ marginTop: 10, width: '100%', minHeight: 100, background: 'rgba(255,255,255,0.04)', border: '1px solid var(--border2)', borderRadius: 10, color: 'var(--text)', padding: 10 }}
+                style={{ marginTop: 10, width: '100%', minHeight: 100, background: 'var(--surface-overlay)', border: '1px solid var(--border2)', borderRadius: 'var(--radius-input)', color: 'var(--text)', padding: 10 }}
               />
               <Input label="Keyword Validation" placeholder="Service healthy" value={form.request_config.keyword}
                 onChange={e => setNested('request_config', 'keyword', e.target.value)} />
             </div>
 
-            <div style={{ padding: 14, border: '1px solid var(--border)', borderRadius: 12 }}>
+            <div style={{ padding: 14, border: '1px solid var(--border)', borderRadius: 'var(--radius-sm)' }}>
               <div style={{ marginBottom: 12, fontSize: 12, color: 'var(--muted)', letterSpacing: '0.04em', textTransform: 'uppercase' }}>Authentication</div>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
                 <Select label="Auth Type" value={form.advanced_config.auth_type}
@@ -487,7 +487,7 @@ export default function MonitorModal({ monitor, onClose, onSaved }) {
                 onChange={e => setNested('advanced_config', 'auth_token', e.target.value)} />
             </div>
 
-            <div style={{ padding: 14, border: '1px solid var(--border)', borderRadius: 12 }}>
+            <div style={{ padding: 14, border: '1px solid var(--border)', borderRadius: 'var(--radius-sm)' }}>
               <div style={{ marginBottom: 12, fontSize: 12, color: 'var(--muted)', letterSpacing: '0.04em', textTransform: 'uppercase' }}>Organization</div>
               <Input label="Tags (comma separated)" placeholder="api,critical,checkout" value={form.organization_config.tags_text}
                 onChange={e => setNested('organization_config', 'tags_text', e.target.value)} />
@@ -497,7 +497,7 @@ export default function MonitorModal({ monitor, onClose, onSaved }) {
                 value={form.organization_config.description}
                 onChange={e => setNested('organization_config', 'description', e.target.value)}
                 placeholder="Description"
-                style={{ marginTop: 10, width: '100%', minHeight: 70, background: 'rgba(255,255,255,0.04)', border: '1px solid var(--border2)', borderRadius: 10, color: 'var(--text)', padding: 10 }}
+                style={{ marginTop: 10, width: '100%', minHeight: 70, background: 'var(--surface-overlay)', border: '1px solid var(--border2)', borderRadius: 'var(--radius-input)', color: 'var(--text)', padding: 10 }}
               />
             </div>
           </div>

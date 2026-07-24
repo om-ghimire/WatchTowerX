@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Card, StatusBadge, Button, UptimeBar, Spinner } from '../ui'
+import { Panel, StatusBadge, Button, UptimeBar, Spinner } from '../ui'
 import { monitorsApi } from '../../lib/api'
 import { formatDistanceToNow } from 'date-fns'
 import { useAuth } from '../../lib/auth'
@@ -31,7 +31,7 @@ export default function MonitorCard({ monitor, results, stats, onEdit, onDeleted
   }
 
   return (
-    <Card style={{ padding: '22px 24px', ...style }}>
+    <Panel style={{ padding: '20px 22px', ...style }}>
       {/* Header row */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 14 }}>
         <div style={{ flex: 1, minWidth: 0, marginRight: 12 }}>
@@ -41,7 +41,7 @@ export default function MonitorCard({ monitor, results, stats, onEdit, onDeleted
               : <span style={{ fontSize: 11, color: 'var(--muted)', fontFamily: 'var(--font-mono)' }}>PENDING</span>
             }
             {!monitor.is_active && (
-              <span style={{ fontSize: 10, color: 'var(--yellow)', background: 'rgba(255,210,63,0.1)', border: '1px solid rgba(255,210,63,0.2)', borderRadius: 5, padding: '2px 7px', fontFamily: 'var(--font-mono)' }}>PAUSED</span>
+              <span style={{ fontSize: 10, color: 'var(--amber)', background: 'var(--amber-dim)', border: '1px solid rgba(255,181,69,0.25)', borderRadius: 'var(--radius-input)', padding: '2px 7px', fontFamily: 'var(--font-mono)' }}>PAUSED</span>
             )}
           </div>
           <div style={{ fontWeight: 600, fontSize: 15, marginBottom: 3 }}>{monitor.name}</div>
@@ -72,8 +72,8 @@ export default function MonitorCard({ monitor, results, stats, onEdit, onDeleted
       <div style={{ display: 'flex', gap: 0, borderTop: '1px solid var(--border)', paddingTop: 14 }}>
         {[
           { label: 'Uptime',    value: stats?.uptime_percent != null ? `${stats.uptime_percent}%` : '—', color: 'var(--green)' },
-          { label: 'Avg response (last 24h)',  value: stats?.avg_response_ms ? `${stats.avg_response_ms}ms` : '—', color: 'var(--blue)' },
-          { label: 'Interval',  value: `${monitor.check_settings?.interval_seconds || monitor.interval_minutes * 60}s`, color: 'var(--purple)' },
+          { label: 'Avg response (last 24h)',  value: stats?.avg_response_ms ? `${stats.avg_response_ms}ms` : '—', color: 'var(--cyan)' },
+          { label: 'Interval',  value: `${monitor.check_settings?.interval_seconds || monitor.interval_minutes * 60}s`, color: 'var(--text)' },
           { label: 'Checked',   value: checkedAt ? formatDistanceToNow(checkedAt, { addSuffix: true }) : 'Never', color: 'var(--muted)' },
         ].map(({ label, value, color }) => (
           <div key={label} style={{ flex: 1, textAlign: 'center' }}>
@@ -86,9 +86,9 @@ export default function MonitorCard({ monitor, results, stats, onEdit, onDeleted
       {/* Pause/Resume */}
       {canEdit && (
         <button onClick={handleToggle} style={{
-          marginTop: 14, width: '100%', padding: '7px', borderRadius: 8,
+          marginTop: 14, width: '100%', padding: '7px', borderRadius: 'var(--radius-btn)',
           background: 'transparent', border: '1px solid var(--border)',
-          color: 'var(--muted)', fontSize: 12, cursor: 'pointer', transition: 'all 0.18s',
+          color: 'var(--muted)', fontSize: 12, cursor: 'pointer', transition: 'border-color 0.15s, color 0.15s',
         }}
         onMouseEnter={e => { e.currentTarget.style.borderColor = 'var(--border2)'; e.currentTarget.style.color = 'var(--text)' }}
         onMouseLeave={e => { e.currentTarget.style.borderColor = 'var(--border)'; e.currentTarget.style.color = 'var(--muted)' }}
@@ -96,6 +96,6 @@ export default function MonitorCard({ monitor, results, stats, onEdit, onDeleted
           {monitor.is_active ? '⏸  Pause monitoring' : '▶  Resume monitoring'}
         </button>
       )}
-    </Card>
+    </Panel>
   )
 }

@@ -55,23 +55,16 @@ export default function AuthPage() {
   return (
     <div style={{
       minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center',
-      background: 'var(--bg)',
-      backgroundImage: 'radial-gradient(ellipse 80% 60% at 50% -10%, rgba(0,245,160,0.08), transparent)',
+      background: 'var(--bg)', position: 'relative',
     }}>
-      {/* Grid bg */}
-      <div style={{
-        position: 'fixed', inset: 0, pointerEvents: 'none', zIndex: 0,
-        backgroundImage: 'linear-gradient(rgba(255,255,255,0.02) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.02) 1px, transparent 1px)',
-        backgroundSize: '48px 48px',
-      }} />
+      <div className="texture-grid" />
 
       <div style={{ position: 'relative', zIndex: 1, width: 420, padding: '0 16px' }} className="fade-up">
         {/* Logo */}
         <div style={{ textAlign: 'center', marginBottom: 40 }}>
           <div style={{
-            fontFamily: 'var(--font-mono)', fontSize: 28, fontWeight: 700,
-            background: 'var(--grad-green)', WebkitBackgroundClip: 'text',
-            WebkitTextFillColor: 'transparent',
+            fontFamily: 'var(--font-mono)', fontSize: 24, fontWeight: 700,
+            color: 'var(--green)',
           }}>
             WatchTowerX
           </div>
@@ -82,9 +75,9 @@ export default function AuthPage() {
 
         {/* Card */}
         <div style={{
-          background: 'var(--bg2)', border: '1px solid var(--border2)',
-          borderRadius: 20, padding: '32px',
-          boxShadow: '0 32px 80px rgba(0,0,0,0.5)',
+          background: 'var(--surface)', border: '1px solid var(--border2)',
+          borderRadius: 'var(--radius-modal)', padding: '32px',
+          boxShadow: 'var(--shadow-soft)',
         }}>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 18 }}>
             {mode === 'register' && (

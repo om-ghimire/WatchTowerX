@@ -1,4 +1,4 @@
-import { Card } from '../ui'
+import { MetricCard } from '../ui'
 
 export default function SummaryCards({ monitors }) {
   const total   = monitors.length
@@ -8,27 +8,16 @@ export default function SummaryCards({ monitors }) {
   const upPct   = total > 0 ? Math.round((up / (total - unknown)) * 100) || 0 : 0
 
   const cards = [
-    { label: 'Total Monitors', value: total, color: 'var(--blue)',   glow: 'rgba(77,159,255,0.2)' },
-    { label: 'Operational',    value: up,    color: 'var(--green)',  glow: 'rgba(0,245,160,0.2)' },
-    { label: 'Down',           value: down,  color: 'var(--red)',    glow: 'rgba(255,77,106,0.2)' },
-    { label: 'Avg Uptime',     value: `${upPct}%`, color: 'var(--purple)', glow: 'rgba(181,123,255,0.2)' },
+    { label: 'Total Monitors', value: total, color: 'var(--text)' },
+    { label: 'Operational',    value: up,    color: 'var(--green)', accent: 'green' },
+    { label: 'Down',           value: down,  color: down > 0 ? 'var(--red)' : 'var(--text)', accent: down > 0 ? 'red' : undefined },
+    { label: 'Avg Uptime',     value: `${upPct}%`, color: 'var(--cyan)' },
   ]
 
   return (
-    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 16 }}>
-      {cards.map(({ label, value, color, glow }, i) => (
-        <Card key={i} className={`fade-up-${i + 1}`} style={{ padding: '22px 24px' }}>
-          <div style={{ fontSize: 11, color: 'var(--muted)', letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: 10 }}>
-            {label}
-          </div>
-          <div style={{
-            fontFamily: 'var(--font-mono)', fontSize: 36, fontWeight: 700,
-            color, textShadow: `0 0 24px ${glow}`,
-            lineHeight: 1,
-          }}>
-            {value}
-          </div>
-        </Card>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+      {cards.map(({ label, value, color, accent }, i) => (
+        <MetricCard key={i} label={label} value={value} color={color} accent={accent} className={`fade-up-${i + 1}`} />
       ))}
     </div>
   )

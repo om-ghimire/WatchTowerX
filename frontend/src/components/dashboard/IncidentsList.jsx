@@ -1,65 +1,74 @@
-import { Card } from '../ui'
+import { Panel } from '../ui'
 import { formatDistanceToNow } from 'date-fns'
 
+// Walk a monitor's check history in chronological order and emit only the
+// state *transitions* (down / recovered) — not every raw check — so the
+// feed reads as a log of events, not a firehose of individual pings.
+function transitionsFor(monitorId, results, monitorName) {
+  const sorted = [...results].sort((a, b) => new Date(a.checked_at) - new Date(b.checked_at))
+  const events = []
+  let prev
+  for (const r of sorted) {
+    if (prev === undefined) {
+      if (!r.is_up) events.push({ ...r, monitorName, type: 'down' })
+    } else if (prev !== r.is_up) {
+      events.push({ ...r, monitorName, type: r.is_up ? 'recovered' : 'down' })
+    }
+    prev = r.is_up
+  }
+  return events
+}
+
 export default function IncidentsList({ allResults, monitors }) {
-  // Collect all DOWN results across all monitors
-  const incidents = allResults
+  const events = allResults
     .flatMap(({ monitorId, results }) =>
-      results
-        .filter(r => !r.is_up)
-        .map(r => ({
-          ...r,
-          monitorName: monitors.find(m => m.id === monitorId)?.name || `Monitor #${monitorId}`,
-        }))
+      transitionsFor(monitorId, results, monitors.find(m => m.id === monitorId)?.name || `Monitor #${monitorId}`)
     )
     .sort((a, b) => new Date(b.checked_at) - new Date(a.checked_at))
-    .slice(0, 10)
+    .slice(0, 8)
 
   return (
-    <Card style={{ padding: '24px' }}>
-      <div style={{ marginBottom: 18, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <div style={{ fontSize: 13, color: 'var(--muted)', letterSpacing: '0.06em', textTransform: 'uppercase' }}>
-          Recent Incidents
+    <Panel style={{ padding: '18px 20px' }}>
+      <div style={{ marginBottom: 14, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <div style={{ fontSize: 12, color: 'var(--muted)', letterSpacing: '0.06em', textTransform: 'uppercase' }}>
+          Event Feed
         </div>
-        <div style={{
-          fontFamily: 'var(--font-mono)', fontSize: 11,
-          background: 'var(--red-dim)', color: 'var(--red)',
-          padding: '3px 8px', borderRadius: 6,
-          border: '1px solid rgba(255,77,106,0.2)',
-        }}>
-          {incidents.length} DOWN events
+        <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--faint)' }}>
+          LIVE
         </div>
       </div>
 
-      {incidents.length === 0 ? (
-        <div style={{ textAlign: 'center', padding: '32px 0', color: 'var(--muted)' }}>
-          <div style={{ fontSize: 28, marginBottom: 8 }}>✓</div>
-          <div style={{ fontSize: 13 }}>No incidents — everything looks good!</div>
+      {events.length === 0 ? (
+        <div style={{ textAlign: 'center', padding: '20px 0', color: 'var(--muted)', fontSize: 12 }}>
+          No events yet
         </div>
       ) : (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-          {incidents.map((inc, i) => (
-            <div key={i} style={{
-              display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-              padding: '12px 14px', borderRadius: 10,
-              background: 'var(--red-dim)', border: '1px solid rgba(255,77,106,0.15)',
-            }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                <span style={{ color: 'var(--red)', fontSize: 14 }}>↓</span>
-                <div>
-                  <div style={{ fontSize: 13, fontWeight: 600 }}>{inc.monitorName}</div>
-                  <div style={{ fontSize: 11, color: 'var(--muted)', fontFamily: 'var(--font-mono)', marginTop: 2 }}>
-                    {inc.error || `HTTP ${inc.status_code}`}
+        <div style={{ display: 'flex', flexDirection: 'column' }}>
+          {events.map((ev, i) => {
+            const isDown = ev.type === 'down'
+            const color = isDown ? 'var(--red)' : 'var(--green)'
+            return (
+              <div key={i} className="stream-in" style={{
+                display: 'flex', alignItems: 'flex-start', gap: 10,
+                padding: '9px 0',
+                borderBottom: i < events.length - 1 ? '1px solid var(--border-subtle)' : 'none',
+                animationDelay: `${i * 30}ms`,
+              }}>
+                <span style={{ color, fontSize: 12, fontFamily: 'var(--font-mono)', marginTop: 1 }}>{isDown ? '↓' : '↑'}</span>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ fontSize: 12, fontWeight: 600 }}>{ev.monitorName}</div>
+                  <div style={{ fontSize: 11, color: 'var(--muted)', fontFamily: 'var(--font-mono)', marginTop: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                    {isDown ? (ev.error || `HTTP ${ev.status_code}`) : 'Recovered'}
                   </div>
                 </div>
+                <div style={{ fontSize: 10, color: 'var(--faint)', whiteSpace: 'nowrap' }}>
+                  {formatDistanceToNow(new Date(ev.checked_at), { addSuffix: true })}
+                </div>
               </div>
-              <div style={{ fontSize: 11, color: 'var(--muted)', textAlign: 'right' }}>
-                {formatDistanceToNow(new Date(inc.checked_at), { addSuffix: true })}
-              </div>
-            </div>
-          ))}
+            )
+          })}
         </div>
       )}
-    </Card>
+    </Panel>
   )
 }

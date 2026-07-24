@@ -1,13 +1,23 @@
 import { clsx } from 'clsx'
 
-// ── Card ──────────────────────────────────────────────
-export function Card({ children, className, style }) {
+const GLOW = {
+  green: 'var(--shadow-glow-green)',
+  red: 'var(--shadow-glow-red)',
+  amber: 'var(--shadow-glow-amber)',
+  cyan: 'var(--shadow-glow-cyan)',
+}
+
+// ── Panel ─────────────────────────────────────────────
+// Flat matte surface. `elevated` adds a soft shadow, `accent` adds a thin
+// left border-bar in a status color instead of a glow/gradient wash.
+export function Panel({ children, className, style, elevated, accent }) {
   return (
-    <div className={clsx('card', className)} style={{
-      background: 'var(--grad-card)',
+    <div className={clsx('panel', className)} style={{
+      background: 'var(--surface)',
       border: '1px solid var(--border)',
-      borderRadius: 'var(--radius-lg)',
-      backdropFilter: 'blur(12px)',
+      borderLeft: accent ? `2px solid var(--${accent})` : '1px solid var(--border)',
+      borderRadius: 'var(--radius-sm)',
+      boxShadow: elevated ? 'var(--shadow-soft)' : 'none',
       ...style
     }}>
       {children}
@@ -23,8 +33,9 @@ export function StatusBadge({ up, size = 'md' }) {
       <span style={{
         width: sz, height: sz, borderRadius: '50%',
         background: up ? 'var(--green)' : 'var(--red)',
-        boxShadow: up ? '0 0 8px var(--green)' : '0 0 8px var(--red)',
-        animation: 'pulse-dot 2s ease-in-out infinite',
+        boxShadow: up ? GLOW.green : 'none',
+        border: up ? 'none' : '1px solid var(--red)',
+        animation: up ? 'pulse-dot 2s ease-in-out infinite' : 'none',
         flexShrink: 0,
       }} />
       <span style={{
@@ -41,11 +52,27 @@ export function StatusBadge({ up, size = 'md' }) {
   )
 }
 
+// ── MetricCard ────────────────────────────────────────
+// Generic label + large mono value block, used anywhere a KPI/stat needs
+// to be shown — replaces copy-pasted stat markup across pages.
+export function MetricCard({ label, value, color = 'var(--text)', accent, className, style }) {
+  return (
+    <Panel accent={accent} className={className} style={{ padding: '16px 18px', ...style }}>
+      <div style={{ fontSize: 11, color: 'var(--muted)', letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: 8 }}>
+        {label}
+      </div>
+      <div style={{ fontFamily: 'var(--font-mono)', fontSize: 26, fontWeight: 700, color, lineHeight: 1 }}>
+        {value}
+      </div>
+    </Panel>
+  )
+}
+
 // ── Button ────────────────────────────────────────────
 export function Button({ children, variant = 'primary', size = 'md', onClick, disabled, type = 'button', style }) {
   const base = {
     display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
-    gap: 8, borderRadius: 10, fontWeight: 500, transition: 'all 0.18s',
+    gap: 8, borderRadius: 'var(--radius-btn)', fontWeight: 500, transition: 'filter 0.15s, background 0.15s',
     fontSize: size === 'sm' ? 13 : 14,
     padding: size === 'sm' ? '6px 14px' : '10px 22px',
     cursor: disabled ? 'not-allowed' : 'pointer',
@@ -53,18 +80,17 @@ export function Button({ children, variant = 'primary', size = 'md', onClick, di
   }
   const variants = {
     primary: {
-      background: 'var(--grad-green)',
-      color: '#080b14',
+      background: 'var(--green)',
+      color: '#090909',
       fontWeight: 700,
-      boxShadow: '0 0 24px rgba(0,245,160,0.25)',
     },
     danger: {
       background: 'var(--red-dim)',
       color: 'var(--red)',
-      border: '1px solid rgba(255,77,106,0.3)',
+      border: '1px solid rgba(255,84,104,0.3)',
     },
     ghost: {
-      background: 'rgba(255,255,255,0.05)',
+      background: 'var(--surface-raised)',
       color: 'var(--text)',
       border: '1px solid var(--border)',
     },
@@ -77,7 +103,7 @@ export function Button({ children, variant = 'primary', size = 'md', onClick, di
   return (
     <button type={type} onClick={onClick} disabled={disabled}
       style={{ ...base, ...variants[variant], ...style }}
-      onMouseEnter={e => !disabled && (e.currentTarget.style.filter = 'brightness(1.1)')}
+      onMouseEnter={e => !disabled && (e.currentTarget.style.filter = 'brightness(1.15)')}
       onMouseLeave={e => (e.currentTarget.style.filter = '')}
     >
       {children}
@@ -91,18 +117,18 @@ export function Input({ label, error, ...props }) {
     <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
       {label && <label style={{ fontSize: 12, color: 'var(--muted)', fontWeight: 500, letterSpacing: '0.04em', textTransform: 'uppercase' }}>{label}</label>}
       <input {...props} style={{
-        background: 'rgba(255,255,255,0.04)',
+        background: 'var(--surface-overlay)',
         border: `1px solid ${error ? 'var(--red)' : 'var(--border2)'}`,
-        borderRadius: 10,
+        borderRadius: 'var(--radius-input)',
         padding: '10px 14px',
         color: 'var(--text)',
         fontSize: 14,
         outline: 'none',
-        transition: 'border-color 0.18s',
+        transition: 'border-color 0.15s',
         width: '100%',
         ...props.style,
       }}
-      onFocus={e => (e.target.style.borderColor = 'var(--green)')}
+      onFocus={e => (e.target.style.borderColor = 'var(--cyan)')}
       onBlur={e => (e.target.style.borderColor = error ? 'var(--red)' : 'var(--border2)')}
       />
       {error && <span style={{ fontSize: 12, color: 'var(--red)' }}>{error}</span>}
@@ -116,9 +142,9 @@ export function Select({ label, children, ...props }) {
     <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
       {label && <label style={{ fontSize: 12, color: 'var(--muted)', fontWeight: 500, letterSpacing: '0.04em', textTransform: 'uppercase' }}>{label}</label>}
       <select {...props} style={{
-        background: 'rgba(255,255,255,0.04)',
+        background: 'var(--surface-overlay)',
         border: '1px solid var(--border2)',
-        borderRadius: 10,
+        borderRadius: 'var(--radius-input)',
         padding: '10px 14px',
         color: 'var(--text)',
         fontSize: 14,

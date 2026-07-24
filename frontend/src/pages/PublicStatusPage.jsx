@@ -10,10 +10,10 @@ function HistoryBar({ buckets = [] }) {
     <div style={{ position: 'relative' }}>
       <div style={{ display: 'flex', gap: 2, height: 32, alignItems: 'flex-end' }}>
         {buckets.map((pct, i) => {
-          const color = pct === null ? '#2a2f45'
-            : pct >= 99  ? '#00f5a0'
-            : pct >= 90  ? '#ffd23f'
-            : '#ff4d6a'
+          const color = pct === null ? 'var(--faint)'
+            : pct >= 99  ? 'var(--green)'
+            : pct >= 90  ? 'var(--amber)'
+            : 'var(--red)'
           const dayLabel = format(
             new Date(Date.now() - (89 - i) * 86400000),
             'MMM d'
@@ -35,13 +35,13 @@ function HistoryBar({ buckets = [] }) {
                 <div style={{
                   position: 'absolute', bottom: 38, left: '50%',
                   transform: 'translateX(-50%)',
-                  background: '#1a2035', border: '1px solid rgba(255,255,255,0.1)',
-                  borderRadius: 8, padding: '6px 10px', fontSize: 11,
+                  background: 'var(--surface-overlay)', border: '1px solid var(--border2)',
+                  borderRadius: 'var(--radius-input)', padding: '6px 10px', fontSize: 11,
                   whiteSpace: 'nowrap', zIndex: 10, pointerEvents: 'none',
-                  color: '#f0f2ff',
+                  color: 'var(--text)',
                 }}>
-                  <div style={{ color: '#7a82a8', marginBottom: 2 }}>{dayLabel}</div>
-                  <div style={{ color, fontFamily: 'monospace', fontWeight: 700 }}>
+                  <div style={{ color: 'var(--muted)', marginBottom: 2 }}>{dayLabel}</div>
+                  <div style={{ color, fontFamily: 'var(--font-mono)', fontWeight: 700 }}>
                     {pct === null ? 'No data' : `${pct}% uptime`}
                   </div>
                 </div>
@@ -50,7 +50,7 @@ function HistoryBar({ buckets = [] }) {
           )
         })}
       </div>
-      <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 6, fontSize: 10, color: '#3a4060' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 6, fontSize: 10, color: 'var(--faint)' }}>
         <span>90 days ago</span>
         <span>Today</span>
       </div>
@@ -62,89 +62,89 @@ function HistoryBar({ buckets = [] }) {
 function MonitorRow({ m }) {
   const [expanded, setExpanded] = useState(false)
   const isUp = m.is_up
-  const statusColor = isUp === null ? '#3a4060' : isUp ? '#00f5a0' : '#ff4d6a'
+  const statusColor = isUp === null ? 'var(--faint)' : isUp ? 'var(--green)' : 'var(--red)'
   const statusLabel = isUp === null ? 'PENDING' : isUp ? 'OPERATIONAL' : 'OUTAGE'
 
   return (
     <div style={{
-      background: 'rgba(255,255,255,0.02)',
-      border: '1px solid rgba(255,255,255,0.07)',
-      borderRadius: 14,
+      background: 'var(--surface)',
+      border: '1px solid var(--border)',
+      borderRadius: 'var(--radius-sm)',
       overflow: 'hidden',
       transition: 'border-color 0.2s',
     }}>
       {/* Main row */}
       <div
         onClick={() => setExpanded(e => !e)}
-        style={{ padding: '18px 24px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 16 }}
+        style={{ padding: '16px 20px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 16 }}
       >
         {/* Status dot */}
         <div style={{
-          width: 10, height: 10, borderRadius: '50%', flexShrink: 0,
+          width: 8, height: 8, borderRadius: '50%', flexShrink: 0,
           background: statusColor,
-          boxShadow: isUp ? '0 0 8px #00f5a0' : isUp === false ? '0 0 8px #ff4d6a' : 'none',
+          boxShadow: isUp ? 'var(--shadow-glow-green)' : isUp === false ? 'var(--shadow-glow-red)' : 'none',
         }} />
 
         {/* Name + URL */}
         <div style={{ flex: 1, minWidth: 0 }}>
-          <div style={{ fontWeight: 600, fontSize: 15, color: '#f0f2ff', marginBottom: 2 }}>{m.name}</div>
-          <div style={{ fontSize: 12, color: '#3a4060', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{m.url}</div>
+          <div style={{ fontWeight: 600, fontSize: 14, color: 'var(--text)', marginBottom: 2 }}>{m.name}</div>
+          <div style={{ fontSize: 12, color: 'var(--faint)', fontFamily: 'var(--font-mono)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{m.url}</div>
         </div>
 
         {/* Uptime 24h */}
         <div style={{ textAlign: 'center', minWidth: 70 }}>
-          <div style={{ fontFamily: 'monospace', fontSize: 15, fontWeight: 700, color: m.uptime_24h >= 99 ? '#00f5a0' : m.uptime_24h >= 90 ? '#ffd23f' : '#ff4d6a' }}>
+          <div style={{ fontFamily: 'var(--font-mono)', fontSize: 14, fontWeight: 700, color: m.uptime_24h >= 99 ? 'var(--green)' : m.uptime_24h >= 90 ? 'var(--amber)' : 'var(--red)' }}>
             {m.uptime_24h != null ? `${m.uptime_24h}%` : '—'}
           </div>
-          <div style={{ fontSize: 10, color: '#3a4060', marginTop: 1 }}>24h uptime</div>
+          <div style={{ fontSize: 10, color: 'var(--faint)', marginTop: 1 }}>24h uptime</div>
         </div>
 
         {/* Avg response */}
         <div style={{ textAlign: 'center', minWidth: 70 }}>
-          <div style={{ fontFamily: 'monospace', fontSize: 15, fontWeight: 700, color: '#4d9fff' }}>
+          <div style={{ fontFamily: 'var(--font-mono)', fontSize: 14, fontWeight: 700, color: 'var(--cyan)' }}>
             {m.avg_response_ms ? `${m.avg_response_ms}ms` : '—'}
           </div>
-          <div style={{ fontSize: 10, color: '#3a4060', marginTop: 1 }}>avg resp</div>
+          <div style={{ fontSize: 10, color: 'var(--faint)', marginTop: 1 }}>avg resp</div>
         </div>
 
         {/* Status badge */}
         <div style={{
-          padding: '5px 12px', borderRadius: 8, fontSize: 11, fontWeight: 700,
-          fontFamily: 'monospace', letterSpacing: '0.05em',
-          color: statusColor, background: `${statusColor}18`,
-          border: `1px solid ${statusColor}30`,
+          padding: '5px 12px', borderRadius: 'var(--radius-input)', fontSize: 11, fontWeight: 700,
+          fontFamily: 'var(--font-mono)', letterSpacing: '0.05em',
+          color: statusColor, background: 'var(--surface-raised)',
+          border: `1px solid ${statusColor}`,
           minWidth: 100, textAlign: 'center',
         }}>
           {statusLabel}
         </div>
 
         {/* Expand chevron */}
-        <div style={{ color: '#3a4060', fontSize: 12, transition: 'transform 0.2s', transform: expanded ? 'rotate(180deg)' : 'none' }}>▼</div>
+        <div style={{ color: 'var(--faint)', fontSize: 12, transition: 'transform 0.2s', transform: expanded ? 'rotate(180deg)' : 'none' }}>▼</div>
       </div>
 
       {/* History bar (always visible) */}
-      <div style={{ padding: '0 24px 18px' }}>
+      <div style={{ padding: '0 20px 16px' }}>
         <HistoryBar buckets={m.daily_buckets} />
       </div>
 
       {/* Expanded: recent incidents */}
       {expanded && m.recent_incidents?.length > 0 && (
-        <div style={{ borderTop: '1px solid rgba(255,255,255,0.07)', padding: '16px 24px' }}>
-          <div style={{ fontSize: 11, color: '#3a4060', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 12 }}>
+        <div style={{ borderTop: '1px solid var(--border)', padding: '14px 20px' }}>
+          <div style={{ fontSize: 11, color: 'var(--faint)', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 12 }}>
             Recent incidents
           </div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
             {m.recent_incidents.map((inc, i) => (
               <div key={i} style={{
                 display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-                padding: '10px 14px', borderRadius: 8,
-                background: 'rgba(255,77,106,0.07)', border: '1px solid rgba(255,77,106,0.15)',
+                padding: '10px 14px', borderRadius: 'var(--radius-input)',
+                background: 'var(--red-dim)', border: '1px solid rgba(255,84,104,0.2)',
               }}>
                 <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
-                  <span style={{ color: '#ff4d6a', fontSize: 12 }}>↓</span>
-                  <span style={{ fontSize: 13, color: '#f0f2ff' }}>{inc.error || `HTTP ${inc.status_code}` || 'Unreachable'}</span>
+                  <span style={{ color: 'var(--red)', fontSize: 12 }}>↓</span>
+                  <span style={{ fontSize: 13, color: 'var(--text)' }}>{inc.error || `HTTP ${inc.status_code}` || 'Unreachable'}</span>
                 </div>
-                <span style={{ fontSize: 11, color: '#3a4060' }}>
+                <span style={{ fontSize: 11, color: 'var(--faint)' }}>
                   {formatDistanceToNow(new Date(inc.checked_at), { addSuffix: true })}
                 </span>
               </div>
@@ -153,7 +153,7 @@ function MonitorRow({ m }) {
         </div>
       )}
       {expanded && (!m.recent_incidents || m.recent_incidents.length === 0) && (
-        <div style={{ borderTop: '1px solid rgba(255,255,255,0.07)', padding: '16px 24px', fontSize: 13, color: '#3a4060', textAlign: 'center' }}>
+        <div style={{ borderTop: '1px solid var(--border)', padding: '14px 20px', fontSize: 13, color: 'var(--faint)', textAlign: 'center' }}>
           No recent incidents recorded ✓
         </div>
       )}
@@ -176,99 +176,78 @@ export default function PublicStatusPage() {
   }, [slug])
 
   const overall = data?.overall_status
-  const overallColor = overall === 'operational' ? '#00f5a0' : overall === 'degraded' ? '#ff4d6a' : '#ffd23f'
+  const overallColor = overall === 'operational' ? 'var(--green)' : overall === 'degraded' ? 'var(--red)' : 'var(--amber)'
   const overallLabel = overall === 'operational' ? 'All Systems Operational'
     : overall === 'degraded' ? 'Partial Outage Detected'
     : 'Checking Systems…'
 
   if (loading) return (
-    <div style={{ minHeight: '100vh', background: '#080b14', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-      <div style={{ width: 32, height: 32, borderRadius: '50%', border: '2px solid rgba(255,255,255,0.1)', borderTopColor: '#00f5a0', animation: 'spin 0.7s linear infinite' }} />
-      <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
+    <div style={{ minHeight: '100vh', background: 'var(--bg)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+      <div style={{ width: 28, height: 28, borderRadius: '50%', border: '2px solid var(--border)', borderTopColor: 'var(--green)', animation: 'spin 0.7s linear infinite' }} />
     </div>
   )
 
   if (error) return (
-    <div style={{ minHeight: '100vh', background: '#080b14', display: 'flex', alignItems: 'center', justifyContent: 'center', flexDirection: 'column', gap: 16 }}>
-      <div style={{ fontSize: 48 }}>◎</div>
-      <div style={{ fontSize: 18, fontWeight: 600, color: '#f0f2ff' }}>Status page not found</div>
-      <div style={{ fontSize: 14, color: '#7a82a8' }}>The page <code style={{ background: 'rgba(255,255,255,0.07)', padding: '2px 6px', borderRadius: 5 }}>/status/{slug}</code> doesn't exist.</div>
+    <div style={{ minHeight: '100vh', background: 'var(--bg)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexDirection: 'column', gap: 16 }}>
+      <div style={{ fontSize: 40, color: 'var(--faint)' }}>◎</div>
+      <div style={{ fontSize: 16, fontWeight: 600, color: 'var(--text)' }}>Status page not found</div>
+      <div style={{ fontSize: 13, color: 'var(--muted)' }}>The page <code style={{ background: 'var(--surface-raised)', padding: '2px 6px', borderRadius: 'var(--radius-input)' }}>/status/{slug}</code> doesn't exist.</div>
     </div>
   )
 
   return (
     <div style={{
       minHeight: '100vh',
-      background: '#080b14',
-      color: '#f0f2ff',
-      fontFamily: "'DM Sans', sans-serif",
-      backgroundImage: 'radial-gradient(ellipse 80% 40% at 50% -5%, rgba(0,245,160,0.06), transparent)',
+      background: 'var(--bg)',
+      color: 'var(--text)',
+      fontFamily: 'var(--font-body)',
+      position: 'relative',
     }}>
-      <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=DM+Sans:wght@300;400;500;600&display=swap');
-        * { box-sizing: border-box; margin: 0; padding: 0; }
-        @keyframes spin { to { transform: rotate(360deg); } }
-        @keyframes fadeUp { from { opacity:0; transform:translateY(12px); } to { opacity:1; transform:translateY(0); } }
-        @keyframes pulse { 0%,100% { opacity:1; transform:scale(1); } 50% { opacity:0.5; transform:scale(0.85); } }
-        .fu1 { animation: fadeUp 0.4s ease both; }
-        .fu2 { animation: fadeUp 0.4s 0.1s ease both; }
-        .fu3 { animation: fadeUp 0.4s 0.18s ease both; }
-        .fu4 { animation: fadeUp 0.4s 0.26s ease both; }
-      `}</style>
+      <div className="texture-grid" />
 
-      <div style={{ maxWidth: 860, margin: '0 auto', padding: '64px 24px 80px' }}>
+      <div style={{ maxWidth: 840, margin: '0 auto', padding: '56px 24px 72px', position: 'relative', zIndex: 1 }}>
 
         {/* Header */}
-        <div className="fu1" style={{ textAlign: 'center', marginBottom: 52 }}>
-          <div style={{ fontFamily: "'Space Mono', monospace", fontSize: 13, letterSpacing: '0.12em', color: '#3a4060', textTransform: 'uppercase', marginBottom: 16 }}>
+        <div className="fade-up" style={{ textAlign: 'center', marginBottom: 44 }}>
+          <div style={{ fontFamily: 'var(--font-mono)', fontSize: 12, letterSpacing: '0.12em', color: 'var(--faint)', textTransform: 'uppercase', marginBottom: 14 }}>
             Status Page
           </div>
-          <h1 style={{ fontSize: 36, fontWeight: 700, marginBottom: 12, letterSpacing: '-0.02em' }}>
+          <h1 style={{ fontSize: 30, fontWeight: 700, marginBottom: 10, letterSpacing: '-0.01em' }}>
             {data.page.title}
           </h1>
           {data.page.description && (
-            <p style={{ fontSize: 15, color: '#7a82a8', maxWidth: 480, margin: '0 auto' }}>{data.page.description}</p>
+            <p style={{ fontSize: 14, color: 'var(--muted)', maxWidth: 460, margin: '0 auto' }}>{data.page.description}</p>
           )}
         </div>
 
         {/* Overall status hero */}
-        <div className="fu2" style={{
-          textAlign: 'center', marginBottom: 52,
-          padding: '32px 24px',
-          borderRadius: 20,
-          background: `${overallColor}08`,
-          border: `1px solid ${overallColor}25`,
-        }}>
-          <div style={{
-            display: 'inline-flex', alignItems: 'center', gap: 14,
-            padding: '14px 28px', borderRadius: 50,
-            background: `${overallColor}12`, border: `1px solid ${overallColor}30`,
-          }}>
+        <div className="fade-up-2" style={{ marginBottom: 44 }}>
+          <div style={{ padding: '13px 18px', borderRadius: 'var(--radius-sm)', background: 'var(--surface)', border: '1px solid var(--border)', borderLeft: `2px solid ${overallColor}`, display: 'flex', alignItems: 'center', gap: 12, justifyContent: 'center' }}>
             <div style={{
-              width: 14, height: 14, borderRadius: '50%',
-              background: overallColor, boxShadow: `0 0 16px ${overallColor}`,
-              animation: 'pulse 2s ease-in-out infinite',
+              width: 8, height: 8, borderRadius: '50%',
+              background: overallColor, boxShadow: `0 0 6px ${overallColor}`,
+              animation: 'pulse-dot 2s ease-in-out infinite',
             }} />
-            <span style={{ fontSize: 18, fontWeight: 700, color: overallColor, letterSpacing: '-0.01em' }}>
+            <span style={{ fontSize: 15, fontWeight: 700, color: overallColor }}>
               {overallLabel}
             </span>
           </div>
-          <div style={{ fontSize: 12, color: '#3a4060', marginTop: 16, fontFamily: "'Space Mono', monospace" }}>
+          <div style={{ fontSize: 11, color: 'var(--faint)', marginTop: 12, textAlign: 'center', fontFamily: 'var(--font-mono)' }}>
             Last updated {data.generated_at ? formatDistanceToNow(new Date(data.generated_at), { addSuffix: true }) : 'just now'}
           </div>
         </div>
 
         {/* Live incident banner */}
         {overall === 'degraded' && (
-          <div className="fu2" style={{
-            marginBottom: 28, padding: '14px 20px', borderRadius: 12,
-            background: 'rgba(255,77,106,0.1)', border: '1px solid rgba(255,77,106,0.3)',
+          <div className="fade-up-2" style={{
+            marginBottom: 24, padding: '13px 18px', borderRadius: 'var(--radius-sm)',
+            background: 'var(--red-dim)', border: '1px solid rgba(255,84,104,0.3)',
             display: 'flex', alignItems: 'center', gap: 12,
           }}>
-            <span style={{ color: '#ff4d6a', fontSize: 18 }}>⚠</span>
+            <span style={{ color: 'var(--red)', fontSize: 16 }}>⚠</span>
             <div>
-              <div style={{ fontWeight: 600, fontSize: 14, color: '#ff4d6a', marginBottom: 2 }}>Active Incident</div>
-              <div style={{ fontSize: 13, color: '#7a82a8' }}>
+              <div style={{ fontWeight: 600, fontSize: 13, color: 'var(--red)', marginBottom: 2 }}>Active Incident</div>
+              <div style={{ fontSize: 12, color: 'var(--muted)' }}>
                 {data.monitors.filter(m => m.is_up === false).map(m => m.name).join(', ')} {data.monitors.filter(m => !m.is_up).length === 1 ? 'is' : 'are'} currently unavailable. Our team is investigating.
               </div>
             </div>
@@ -276,13 +255,13 @@ export default function PublicStatusPage() {
         )}
 
         {/* Monitor list */}
-        <div className="fu3" style={{ marginBottom: 48 }}>
-          <div style={{ fontSize: 11, color: '#3a4060', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 16 }}>
+        <div className="fade-up-3" style={{ marginBottom: 44 }}>
+          <div style={{ fontSize: 11, color: 'var(--faint)', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 14 }}>
             {data.monitors.length} service{data.monitors.length !== 1 ? 's' : ''} monitored
           </div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
             {data.monitors.length === 0 ? (
-              <div style={{ padding: '40px', textAlign: 'center', color: '#3a4060', border: '1px dashed rgba(255,255,255,0.07)', borderRadius: 14 }}>
+              <div style={{ padding: '40px', textAlign: 'center', color: 'var(--faint)', border: '1px dashed var(--border)', borderRadius: 'var(--radius-sm)' }}>
                 No monitors configured for this page.
               </div>
             ) : (
@@ -292,19 +271,19 @@ export default function PublicStatusPage() {
         </div>
 
         {/* Legend */}
-        <div className="fu4" style={{ display: 'flex', gap: 20, justifyContent: 'center', marginBottom: 40 }}>
-          {[['#00f5a0','Operational'],['#ffd23f','Degraded'],['#ff4d6a','Outage'],['#2a2f45','No data']].map(([color, label]) => (
-            <div key={label} style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, color: '#3a4060' }}>
-              <div style={{ width: 10, height: 10, borderRadius: 2, background: color }} />
+        <div className="fade-up-4" style={{ display: 'flex', gap: 20, justifyContent: 'center', marginBottom: 36 }}>
+          {[['var(--green)','Operational'],['var(--amber)','Degraded'],['var(--red)','Outage'],['var(--faint)','No data']].map(([color, label]) => (
+            <div key={label} style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, color: 'var(--faint)' }}>
+              <div style={{ width: 8, height: 8, borderRadius: 2, background: color }} />
               {label}
             </div>
           ))}
         </div>
 
         {/* Footer */}
-        <div className="fu4" style={{ textAlign: 'center', fontSize: 12, color: '#2a2f45' }}>
+        <div className="fade-up-4" style={{ textAlign: 'center', fontSize: 11, color: 'var(--faint)' }}>
           Powered by{' '}
-          <span style={{ fontFamily: "'Space Mono', monospace", color: '#3a4060' }}>WatchTowerX</span>
+          <span style={{ fontFamily: 'var(--font-mono)', color: 'var(--muted)' }}>WatchTowerX</span>
         </div>
       </div>
     </div>

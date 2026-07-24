@@ -14,41 +14,40 @@ export default function Sidebar() {
 
   return (
     <aside style={{
-      width: 220, flexShrink: 0,
-      background: 'var(--bg2)',
+      width: 208, flexShrink: 0,
+      background: 'var(--surface)',
       borderRight: '1px solid var(--border)',
       display: 'flex', flexDirection: 'column',
-      padding: '28px 16px',
+      padding: '24px 14px',
       position: 'sticky', top: 0, height: '100vh',
     }}>
-      <div style={{ marginBottom: 36, paddingLeft: 8 }}>
+      <div style={{ marginBottom: 32, paddingLeft: 8 }}>
         <div style={{
-          fontFamily: 'var(--font-mono)', fontSize: 18, fontWeight: 700,
-          background: 'var(--grad-green)', WebkitBackgroundClip: 'text',
-          WebkitTextFillColor: 'transparent', letterSpacing: '-0.02em',
+          fontFamily: 'var(--font-mono)', fontSize: 16, fontWeight: 700,
+          color: 'var(--green)', letterSpacing: '-0.01em',
         }}>
-          WatchTower<span style={{ color: 'var(--blue)', WebkitTextFillColor: 'var(--blue)' }}>X</span>
+          WatchTower<span style={{ color: 'var(--cyan)' }}>X</span>
         </div>
-        <div style={{ fontSize: 11, color: 'var(--muted)', marginTop: 2, letterSpacing: '0.06em' }}>
+        <div style={{ fontSize: 10, color: 'var(--faint)', marginTop: 3, letterSpacing: '0.08em' }}>
           MONITOR
         </div>
       </div>
 
-      <nav style={{ display: 'flex', flexDirection: 'column', gap: 4, flex: 1 }}>
+      <nav style={{ display: 'flex', flexDirection: 'column', gap: 2, flex: 1 }}>
         {navItems.map(({ to, label, icon }) => (
           <NavLink key={to} to={to} end={to === '/'} style={({ isActive }) => ({
             display: 'flex', alignItems: 'center', gap: 12,
-            padding: '10px 14px', borderRadius: 10,
-            fontSize: 14, fontWeight: 500,
+            padding: '9px 12px', borderRadius: 'var(--radius-btn)',
+            fontSize: 13, fontWeight: 500,
             color: isActive ? 'var(--green)' : 'var(--muted)',
             background: isActive ? 'var(--green-dim)' : 'transparent',
-            border: isActive ? '1px solid rgba(0,245,160,0.15)' : '1px solid transparent',
-            transition: 'all 0.18s', textDecoration: 'none',
+            borderLeft: isActive ? '2px solid var(--green)' : '2px solid transparent',
+            transition: 'background 0.15s, color 0.15s', textDecoration: 'none',
           })}
-          onMouseEnter={e => { if (!e.currentTarget.style.background.includes('dim')) e.currentTarget.style.background = 'rgba(255,255,255,0.04)' }}
+          onMouseEnter={e => { if (!e.currentTarget.style.background.includes('dim')) e.currentTarget.style.background = 'var(--surface-raised)' }}
           onMouseLeave={e => { if (!e.currentTarget.style.background.includes('dim')) e.currentTarget.style.background = 'transparent' }}
           >
-            <span style={{ fontSize: 16 }}>{icon}</span>
+            <span style={{ fontSize: 15 }}>{icon}</span>
             {label}
           </NavLink>
         ))}
@@ -56,16 +55,24 @@ export default function Sidebar() {
 
       <button onClick={() => { logout(); navigate('/login') }} style={{
         display: 'flex', alignItems: 'center', gap: 12,
-        padding: '10px 14px', borderRadius: 10,
-        fontSize: 14, fontWeight: 500, color: 'var(--muted)',
+        padding: '9px 12px', borderRadius: 'var(--radius-btn)',
+        fontSize: 13, fontWeight: 500, color: 'var(--muted)',
         background: 'transparent', border: '1px solid transparent',
-        transition: 'all 0.18s', cursor: 'pointer',
+        transition: 'background 0.15s, color 0.15s', cursor: 'pointer',
       }}
       onMouseEnter={e => { e.currentTarget.style.color = 'var(--red)'; e.currentTarget.style.background = 'var(--red-dim)' }}
       onMouseLeave={e => { e.currentTarget.style.color = 'var(--muted)'; e.currentTarget.style.background = 'transparent' }}
       >
         <span>⎋</span> Sign out
       </button>
+
+      <div style={{
+        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+        marginTop: 10, padding: '8px 12px', fontSize: 11, color: 'var(--faint)',
+      }}>
+        <span>Command palette</span>
+        <span style={{ fontFamily: 'var(--font-mono)', border: '1px solid var(--border)', borderRadius: 'var(--radius-input)', padding: '1px 6px' }}>⌘K</span>
+      </div>
     </aside>
   )
 }
