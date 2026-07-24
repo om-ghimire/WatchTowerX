@@ -68,4 +68,30 @@ export const statusPagesApi = {
   remove:      (id)         => api.delete(`/status-pages/${id}`),
   getPublic:   (slug)       => axios.get(`/api/status/${slug}`).then(r => r.data),
 }
+
+// ── Status Page Components ─────────────────────────────
+export const componentsApi = {
+  list:   (pageId)         => api.get(`/status-pages/${pageId}/components`).then(r => r.data),
+  create: (pageId, data)   => api.post(`/status-pages/${pageId}/components`, data).then(r => r.data),
+  update: (pageId, id, data) => api.patch(`/status-pages/${pageId}/components/${id}`, data).then(r => r.data),
+  remove: (pageId, id)     => api.delete(`/status-pages/${pageId}/components/${id}`),
+}
+
+// ── Incidents ───────────────────────────────────────────
+export const incidentsApi = {
+  list:      (pageId)          => api.get(`/status-pages/${pageId}/incidents`).then(r => r.data),
+  create:    (pageId, data)    => api.post(`/status-pages/${pageId}/incidents`, data).then(r => r.data),
+  addUpdate: (pageId, id, data) => api.post(`/status-pages/${pageId}/incidents/${id}/updates`, data).then(r => r.data),
+  remove:    (pageId, id)      => api.delete(`/status-pages/${pageId}/incidents/${id}`),
+}
+
+// ── Maintenance Windows ─────────────────────────────────
+export const maintenanceApi = {
+  list:      (pageId)          => api.get(`/status-pages/${pageId}/maintenance`).then(r => r.data),
+  create:    (pageId, data)    => api.post(`/status-pages/${pageId}/maintenance`, data).then(r => r.data),
+  update:    (pageId, id, data) => api.patch(`/status-pages/${pageId}/maintenance/${id}`, data).then(r => r.data),
+  addUpdate: (pageId, id, data) => api.post(`/status-pages/${pageId}/maintenance/${id}/updates`, data).then(r => r.data),
+  remove:    (pageId, id)      => api.delete(`/status-pages/${pageId}/maintenance/${id}`),
+}
+
 export default api

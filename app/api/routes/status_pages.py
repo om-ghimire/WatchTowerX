@@ -2,6 +2,7 @@ from datetime import datetime, timedelta
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func, Integer, cast
+from sqlalchemy.orm import selectinload
 
 from app.db.session import get_db
 from app.core.security import get_account_owner_id, get_current_user, require_roles
@@ -9,7 +10,12 @@ from app.models.user import User
 from app.models.status_page import StatusPage
 from app.models.monitor import Monitor
 from app.models.check_result import CheckResult
+from app.models.status_page_component import StatusPageComponent
+from app.models.incident import Incident
+from app.models.maintenance_window import MaintenanceWindow
 from app.schemas.status_page import StatusPageCreate, StatusPageUpdate, StatusPageOut
+from app.schemas.incident import IncidentOut
+from app.schemas.maintenance import MaintenanceOut
 
 router = APIRouter(tags=["status-pages"])
 
@@ -104,8 +110,6 @@ async def get_public_status_page(slug: str, db: AsyncSession = Depends(get_db)):
         raise HTTPException(status_code=404, detail="Status page not found")
 
     monitor_ids = [int(i) for i in page.monitor_ids.split(",") if i.strip()] if page.monitor_ids else []
-    if not monitor_ids:
-        return {"page": StatusPageOut.from_orm_obj(page), "monitors": []}
 
     monitors_result = await db.execute(
         select(Monitor).where(Monitor.id.in_(monitor_ids), Monitor.is_active == True)  # noqa
@@ -182,9 +186,43 @@ async def get_public_status_page(slug: str, db: AsyncSession = Depends(get_db)):
     any_down = any(m["is_up"] is False for m in monitors_data)
     overall = "operational" if all_up else ("degraded" if any_down else "unknown")
 
+    components_result = await db.execute(
+        select(StatusPageComponent)
+        .where(StatusPageComponent.status_page_id == page.id)
+        .order_by(StatusPageComponent.display_order, StatusPageComponent.id)
+    )
+    components = components_result.scalars().all()
+
+    incidents_result = await db.execute(
+        select(Incident)
+        .options(selectinload(Incident.updates))
+        .where(Incident.status_page_id == page.id)
+        .order_by(Incident.started_at.desc())
+        .limit(15)
+    )
+    incidents = [IncidentOut.from_orm_obj(i) for i in incidents_result.scalars().all()]
+
+    maintenance_result = await db.execute(
+        select(MaintenanceWindow)
+        .options(selectinload(MaintenanceWindow.updates))
+        .where(MaintenanceWindow.status_page_id == page.id)
+        .order_by(MaintenanceWindow.scheduled_start.desc())
+        .limit(15)
+    )
+    maintenance = [MaintenanceOut.from_orm_obj(m) for m in maintenance_result.scalars().all()]
+
     return {
         "page": StatusPageOut.from_orm_obj(page),
         "overall_status": overall,
         "monitors": monitors_data,
+        "components": [
+            {
+                "id": c.id, "name": c.name, "description": c.description,
+                "status": c.status, "display_order": c.display_order,
+            }
+            for c in components
+        ],
+        "incidents": [i.model_dump(mode="json") for i in incidents],
+        "maintenance": [m.model_dump(mode="json") for m in maintenance],
         "generated_at": str(datetime.utcnow()),
     }

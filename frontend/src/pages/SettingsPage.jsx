@@ -1,4 +1,5 @@
 import { useState, useCallback, useEffect } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { alertsApi, authApi, statusPagesApi, monitorsApi } from '../lib/api'
 import { useAuth } from '../lib/auth'
 import { Button, Input, Select, Spinner, Panel } from '../components/ui'
@@ -113,6 +114,7 @@ function AddChannelForm({ onSaved, onCancel }) {
 
 // ── Status page form ───────────────────────────────────
 function StatusPageSection({ monitors, canEdit }) {
+  const navigate = useNavigate()
   const [pages, setPages]       = useState([])
   const [loading, setLoading]   = useState(true)
   const [showForm, setShowForm] = useState(false)
@@ -269,6 +271,7 @@ function StatusPageSection({ monitors, canEdit }) {
               {!canEdit && <span style={{ fontSize: 12, color: 'var(--muted)' }}>View only</span>}
               {canEdit && (
                 <div style={{ display: 'flex', gap: 8 }}>
+                  <Button size="sm" variant="primary" onClick={() => navigate(`/settings/status-pages/${p.id}`)}>Manage</Button>
                   <Button size="sm" variant="outline" onClick={() => beginEdit(p)}>Edit</Button>
                   <Button size="sm" variant="danger" onClick={() => deletePage(p.id)}>Delete</Button>
                 </div>

@@ -7,6 +7,7 @@ import DashboardPage from './pages/DashboardPage'
 import MonitorsPage from './pages/MonitorsPage'
 import IncidentsPage from './pages/IncidentsPage'
 import SettingsPage from './pages/SettingsPage'
+import StatusPageManage from './pages/StatusPageManage'
 import PublicStatusPage from './pages/PublicStatusPage'
 
 function ProtectedLayout() {
@@ -22,6 +23,7 @@ function ProtectedLayout() {
           <Route path="/monitors"   element={<MonitorsPage />} />
           <Route path="/incidents"  element={<IncidentsPage />} />
           <Route path="/settings"   element={<SettingsPage />} />
+          <Route path="/settings/status-pages/:id" element={<StatusPageManage />} />
           <Route path="*"           element={<Navigate to="/" replace />} />
         </Routes>
       </main>

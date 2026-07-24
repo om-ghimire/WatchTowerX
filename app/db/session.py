@@ -28,6 +28,7 @@ async def init_db():
     """Create all tables on startup."""
     async with engine.begin() as conn:
         from app.models import user, monitor, check_result, alert_channel, status_page  # noqa: F401
+        from app.models import status_page_component, incident, maintenance_window  # noqa: F401
         await conn.run_sync(Base.metadata.create_all)
 
         # Lightweight schema upgrade path for existing Postgres databases.
