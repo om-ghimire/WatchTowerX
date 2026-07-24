@@ -117,25 +117,29 @@ async def get_public_status_page(slug: str, db: AsyncSession = Depends(get_db)):
 
     monitors_data = []
     for m in monitors:
-        # 90-day daily uptime buckets
+        # 90-day daily uptime buckets — aggregated in SQL (not fetched row-by-row
+        # and scanned 90x in Python) so this stays cheap as check history grows.
+        day_expr = func.date_trunc("day", CheckResult.checked_at)
         daily_result = await db.execute(
-            select(CheckResult)
+            select(
+                day_expr.label("day"),
+                func.count(CheckResult.id).label("total"),
+                func.sum(cast(CheckResult.is_up, Integer)).label("up_count"),
+            )
             .where(CheckResult.monitor_id == m.id, CheckResult.checked_at >= since_90d)
-            .order_by(CheckResult.checked_at.asc())
+            .group_by(day_expr)
         )
-        all_checks = daily_result.scalars().all()
+        by_day = {row.day.date(): (row.up_count or 0, row.total) for row in daily_result}
 
-        # Group into 90 daily buckets
         buckets = []
         for day_offset in range(89, -1, -1):
             day_start = datetime.utcnow().replace(hour=0, minute=0, second=0, microsecond=0) - timedelta(days=day_offset)
-            day_end = day_start + timedelta(days=1)
-            day_checks = [c for c in all_checks if day_start <= c.checked_at < day_end]
-            if not day_checks:
+            stats = by_day.get(day_start.date())
+            if not stats:
                 buckets.append(None)
             else:
-                up = sum(1 for c in day_checks if c.is_up)
-                buckets.append(round(up / len(day_checks) * 100, 1))
+                up_count, total = stats
+                buckets.append(round(up_count / total * 100, 1) if total else None)
 
         # 24h stats
         stats_result = await db.execute(
