@@ -1,5 +1,6 @@
 import { Panel } from '../ui'
 import { formatDistanceToNow } from 'date-fns'
+import { parseServerTimestamp } from '../../lib/dates'
 
 // Walk a monitor's check history in chronological order and emit only the
 // state *transitions* (down / recovered) — not every raw check — so the
@@ -62,7 +63,7 @@ export default function IncidentsList({ allResults, monitors }) {
                   </div>
                 </div>
                 <div style={{ fontSize: 10, color: 'var(--faint)', whiteSpace: 'nowrap' }}>
-                  {formatDistanceToNow(new Date(ev.checked_at), { addSuffix: true })}
+                  {formatDistanceToNow(parseServerTimestamp(ev.checked_at), { addSuffix: true })}
                 </div>
               </div>
             )

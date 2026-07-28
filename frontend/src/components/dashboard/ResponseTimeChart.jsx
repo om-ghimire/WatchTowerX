@@ -4,6 +4,7 @@ import {
   ResponsiveContainer, CartesianGrid,
 } from 'recharts'
 import { format } from 'date-fns'
+import { parseServerTimestamp } from '../../lib/dates'
 
 function CustomTooltip({ active, payload, label }) {
   if (!active || !payload?.length) return null
@@ -27,7 +28,7 @@ export default function ResponseTimeChart({ results, monitorName }) {
     .slice(0, 50)
     .reverse()
     .map(r => ({
-      time: format(new Date(r.checked_at), 'HH:mm'),
+      time: format(parseServerTimestamp(r.checked_at), 'HH:mm'),
       ms: r.is_up ? Math.round(r.response_time_ms) : null,
     }))
 

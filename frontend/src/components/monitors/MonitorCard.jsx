@@ -3,15 +3,7 @@ import { Panel, StatusBadge, Button, UptimeBar, Spinner } from '../ui'
 import { monitorsApi } from '../../lib/api'
 import { formatDistanceToNow } from 'date-fns'
 import { useAuth } from '../../lib/auth'
-
-function parseServerTimestamp(value) {
-  if (!value) return null
-  const asText = String(value)
-  const hasTimezone = /[zZ]$|[+-]\d{2}:\d{2}$/.test(asText)
-  const normalized = hasTimezone ? asText : `${asText}Z`
-  const parsed = new Date(normalized)
-  return Number.isNaN(parsed.getTime()) ? null : parsed
-}
+import { parseServerTimestamp } from '../../lib/dates'
 
 export default function MonitorCard({ monitor, results, stats, onEdit, onDeleted, style }) {
   const [deleting, setDeleting] = useState(false)

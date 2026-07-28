@@ -96,8 +96,10 @@ async def update_monitor(
             schedule_monitor(monitor.id, monitor_service.interval_seconds_for_monitor(monitor))
         else:
             unschedule_monitor(monitor.id)
+    else:
+        unschedule_monitor(monitor.id)
 
-    # Invalidate both the old and new parent group's cached summary.
+  
     if old_parent_group_id is not None:
         await group_service.invalidate_group_cache(db, old_parent_group_id)
     if monitor.parent_group_id is not None:

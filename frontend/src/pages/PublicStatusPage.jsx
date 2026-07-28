@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { useParams } from 'react-router-dom'
 import { statusPagesApi } from '../lib/api'
 import { formatDistanceToNow, formatDistance, format } from 'date-fns'
+import { parseServerTimestamp } from '../lib/dates'
 
 const COMPONENT_STATUS_META = {
   operational:    { label: 'Operational',    color: 'var(--green)' },
@@ -131,7 +132,7 @@ function IncidentTimeline({ incidents }) {
                 {inc.updates.map(u => (
                   <div key={u.id} style={{ fontSize: 12 }}>
                     <span style={{ color: 'var(--faint)', fontFamily: 'var(--font-mono)', fontSize: 10, marginRight: 8 }}>
-                      {format(new Date(u.created_at), 'MMM d, HH:mm')}
+                      {format(parseServerTimestamp(u.created_at), 'MMM d, HH:mm')}
                     </span>
                     <span style={{ color: 'var(--text)', fontWeight: 500, textTransform: 'capitalize' }}>{u.status}</span>
                     <span style={{ color: 'var(--muted)' }}> — {u.message}</span>
@@ -170,8 +171,8 @@ function MaintenanceList({ maintenance }) {
               </div>
               {mw.description && <div style={{ fontSize: 12, color: 'var(--muted)', marginBottom: 8 }}>{mw.description}</div>}
               <div style={{ fontSize: 11, color: 'var(--faint)', fontFamily: 'var(--font-mono)' }}>
-                {format(new Date(mw.scheduled_start), 'MMM d, HH:mm')} → {format(new Date(mw.scheduled_end), 'MMM d, HH:mm')}
-                {mw.status === 'upcoming' && ` · starts ${formatDistanceToNow(new Date(mw.scheduled_start), { addSuffix: true })}`}
+                {format(parseServerTimestamp(mw.scheduled_start), 'MMM d, HH:mm')} → {format(parseServerTimestamp(mw.scheduled_end), 'MMM d, HH:mm')}
+                {mw.status === 'upcoming' && ` · starts ${formatDistanceToNow(parseServerTimestamp(mw.scheduled_start), { addSuffix: true })}`}
               </div>
             </div>
           )

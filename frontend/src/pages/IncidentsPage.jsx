@@ -3,6 +3,7 @@ import { monitorsApi, resultsApi } from '../lib/api'
 import { useAutoRefresh } from '../hooks/useAutoRefresh'
 import { Panel, Spinner } from '../components/ui'
 import { formatDistanceToNow, format } from 'date-fns'
+import { parseServerTimestamp } from '../lib/dates'
 
 export default function IncidentsPage() {
   const [monitors, setMonitors]     = useState([])
@@ -30,7 +31,7 @@ export default function IncidentsPage() {
         monitorUrl:  monitors.find(m => m.id === monitorId)?.url,
       }))
     )
-    .sort((a, b) => new Date(b.checked_at) - new Date(a.checked_at))
+    .sort((a, b) => parseServerTimestamp(b.checked_at) - parseServerTimestamp(a.checked_at))
 
   return (
     <div style={{ flex: 1, overflowY: 'auto', padding: '32px 36px' }}>
@@ -83,10 +84,10 @@ export default function IncidentsPage() {
               </div>
               <div style={{ alignSelf: 'center' }}>
                 <div style={{ fontSize: 12, color: 'var(--text)' }}>
-                  {formatDistanceToNow(new Date(inc.checked_at), { addSuffix: true })}
+                  {formatDistanceToNow(parseServerTimestamp(inc.checked_at), { addSuffix: true })}
                 </div>
                 <div style={{ fontSize: 10, color: 'var(--muted)', marginTop: 2 }}>
-                  {format(new Date(inc.checked_at), 'MMM d, HH:mm:ss')}
+                  {format(parseServerTimestamp(inc.checked_at), 'MMM d, HH:mm:ss')}
                 </div>
               </div>
             </div>

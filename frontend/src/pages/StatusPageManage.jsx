@@ -3,6 +3,7 @@ import { useNavigate, useParams } from 'react-router-dom'
 import { statusPagesApi, componentsApi, incidentsApi, maintenanceApi, monitorsApi } from '../lib/api'
 import { Button, Input, Select, Spinner, Panel } from '../components/ui'
 import { formatDistanceToNow, format } from 'date-fns'
+import { parseServerTimestamp } from '../lib/dates'
 
 const COMPONENT_STATUSES = [
   { value: 'operational',    label: 'Operational',    color: 'var(--green)' },
@@ -274,7 +275,7 @@ function IncidentsTab({ pageId, components }) {
                   {inc.updates.map(u => (
                     <div key={u.id} style={{ fontSize: 12 }}>
                       <span style={{ color: 'var(--muted)', fontFamily: 'var(--font-mono)', fontSize: 10, marginRight: 8 }}>
-                        {format(new Date(u.created_at), 'MMM d, HH:mm')}
+                        {format(parseServerTimestamp(u.created_at), 'MMM d, HH:mm')}
                       </span>
                       <span style={{ color: 'var(--text)', fontWeight: 500 }}>{u.status}</span>
                       <span style={{ color: 'var(--muted)' }}> — {u.message}</span>
@@ -400,7 +401,7 @@ function MaintenanceTab({ pageId, components }) {
                 <div>
                   <div style={{ fontWeight: 600, fontSize: 14 }}>{mw.title}</div>
                   <div style={{ fontSize: 11, color: 'var(--muted)', marginTop: 4, fontFamily: 'var(--font-mono)' }}>
-                    {format(new Date(mw.scheduled_start), 'MMM d, HH:mm')} → {format(new Date(mw.scheduled_end), 'MMM d, HH:mm')}
+                    {format(parseServerTimestamp(mw.scheduled_start), 'MMM d, HH:mm')} → {format(parseServerTimestamp(mw.scheduled_end), 'MMM d, HH:mm')}
                     {' · '}<span style={{ color: 'var(--text)', textTransform: 'uppercase' }}>{mw.status}</span>
                   </div>
                 </div>
@@ -412,7 +413,7 @@ function MaintenanceTab({ pageId, components }) {
                   {mw.updates.map(u => (
                     <div key={u.id} style={{ fontSize: 12 }}>
                       <span style={{ color: 'var(--muted)', fontFamily: 'var(--font-mono)', fontSize: 10, marginRight: 8 }}>
-                        {format(new Date(u.created_at), 'MMM d, HH:mm')}
+                        {format(parseServerTimestamp(u.created_at), 'MMM d, HH:mm')}
                       </span>
                       <span style={{ color: 'var(--muted)' }}>{u.message}</span>
                     </div>
