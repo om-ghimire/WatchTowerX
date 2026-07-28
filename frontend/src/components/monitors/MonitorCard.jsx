@@ -57,7 +57,7 @@ export default function MonitorCard({ monitor, results, stats, onEdit, onDeleted
       {/* Uptime bar */}
       <div style={{ marginBottom: 16 }}>
         <div style={{ fontSize: 11, color: 'var(--muted)', marginBottom: 6, letterSpacing: '0.04em' }}>RECENT CHECKS</div>
-        <UptimeBar results={results || []} />
+        <UptimeBar results={results || []} maxBars={40} />
       </div>
 
       {/* Stats row */}

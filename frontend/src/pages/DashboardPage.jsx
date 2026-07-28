@@ -38,7 +38,7 @@ function MonitorRow({ monitor, results, stats, onEdit, indent = 0 }) {
         <div style={{ fontSize: 11, color: 'var(--muted)', fontFamily: 'var(--font-mono)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{monitor.url}</div>
       </div>
       <div>
-        <UptimeBar results={results || []} />
+        <UptimeBar results={results || []} maxBars={20} />
       </div>
       <div style={{ textAlign: 'center' }}>
         <div style={{ fontFamily: 'var(--font-mono)', fontSize: 13, fontWeight: 700, color: uptime >= 99 ? 'var(--green)' : uptime >= 90 ? 'var(--amber)' : 'var(--red)' }}>

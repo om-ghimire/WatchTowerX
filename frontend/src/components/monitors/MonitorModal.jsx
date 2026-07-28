@@ -173,6 +173,52 @@ function parseStatusCodes(text) {
   return [...codes].sort((a, b) => a - b)
 }
 
+function ParentGroupSelect({ label, value, onChange, groups, onGroupCreated, emptyLabel = 'None — ungrouped' }) {
+  const [creating, setCreating] = useState(false)
+  const [newName, setNewName] = useState('')
+  const [saving, setSaving] = useState(false)
+
+  const handleSelect = (e) => {
+    if (e.target.value === '__new__') { setCreating(true); return }
+    onChange(e.target.value)
+  }
+
+  const createGroup = async () => {
+    if (!newName.trim()) return
+    setSaving(true)
+    try {
+      const group = await groupsApi.create({ name: newName.trim() })
+      onGroupCreated(group)
+      onChange(String(group.id))
+      setCreating(false)
+      setNewName('')
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  if (creating) {
+    return (
+      <div>
+        <div style={{ fontSize: 12, marginBottom: 6, color: 'var(--muted)' }}>{label}</div>
+        <div style={{ display: 'flex', gap: 6 }}>
+          <Input placeholder="New group name" value={newName} onChange={e => setNewName(e.target.value)} />
+          <Button size="sm" variant="outline" onClick={createGroup} disabled={saving || !newName.trim()}>{saving ? '…' : 'Create'}</Button>
+          <Button size="sm" variant="ghost" onClick={() => { setCreating(false); setNewName('') }}>Cancel</Button>
+        </div>
+      </div>
+    )
+  }
+
+  return (
+    <Select label={label} value={value} onChange={handleSelect}>
+      <option value="">{emptyLabel}</option>
+      {groups.map(g => <option key={g.id} value={g.id}>{g.name}</option>)}
+      <option value="__new__">+ Create new group…</option>
+    </Select>
+  )
+}
+
 export default function MonitorModal({ monitor, onClose, onSaved }) {
   const isEdit = !!monitor
   const [form, setForm] = useState(buildInitialForm(monitor))
@@ -369,10 +415,9 @@ export default function MonitorModal({ monitor, onClose, onSaved }) {
                   onChange={e => setNested('group_config', 'icon', e.target.value)} />
                 <Input label="Color" placeholder="#00d97e" value={form.group_config.color}
                   onChange={e => setNested('group_config', 'color', e.target.value)} />
-                <Select label="Parent Group (optional)" value={form.parent_group_id} onChange={e => set('parent_group_id', e.target.value)}>
-                  <option value="">None — top level</option>
-                  {selectableGroups.map(g => <option key={g.id} value={g.id}>{g.name}</option>)}
-                </Select>
+                <ParentGroupSelect label="Parent Group (optional)" value={form.parent_group_id}
+                  onChange={v => set('parent_group_id', v)} groups={selectableGroups}
+                  onGroupCreated={g => setAvailableGroups(gs => [...gs, g])} emptyLabel="None — top level" />
               </div>
               <textarea
                 value={form.organization_config.description}
@@ -450,7 +495,6 @@ export default function MonitorModal({ monitor, onClose, onSaved }) {
                   <option value="ping">Ping</option>
                   <option value="tcp">TCP</option>
                   <option value="dns">DNS</option>
-                  <option value="group">Group</option>
                 </Select>
                 <Input label="Friendly Name" placeholder="Checkout API" value={form.name}
                   onChange={e => set('name', e.target.value)} error={errors.name} />
@@ -458,10 +502,9 @@ export default function MonitorModal({ monitor, onClose, onSaved }) {
                   onChange={e => set('target', e.target.value)} error={errors.target} />
                 <Input label="Port (if applicable)" type="number" placeholder="443" value={form.port}
                   onChange={e => set('port', e.target.value)} error={errors.port} />
-                <Select label="Parent Group (optional)" value={form.parent_group_id} onChange={e => set('parent_group_id', e.target.value)}>
-                  <option value="">None — ungrouped</option>
-                  {selectableGroups.map(g => <option key={g.id} value={g.id}>{g.name}</option>)}
-                </Select>
+                <ParentGroupSelect label="Parent Group (optional)" value={form.parent_group_id}
+                  onChange={v => set('parent_group_id', v)} groups={selectableGroups}
+                  onGroupCreated={g => setAvailableGroups(gs => [...gs, g])} />
               </div>
             </div>
 

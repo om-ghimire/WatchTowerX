@@ -172,8 +172,12 @@ export function Spinner({ size = 20 }) {
 }
 
 // ── UptimeBar (sparkline of up/down checks) ───────────
-export function UptimeBar({ results = [] }) {
-  const last90 = [...results].slice(0, 90).reverse()
+export function UptimeBar({ results = [], maxBars = 90 }) {
+  // Bars are flex:1 with a fixed gap — with too many of them the gaps alone
+  // can exceed the container width, shrinking every bar to ~0px (rendered
+  // but invisible) rather than overflowing visibly. Cap to what the caller's
+  // layout can actually fit.
+  const last90 = [...results].slice(0, maxBars).reverse()
   return (
     <div style={{ display: 'flex', gap: 2, alignItems: 'center', height: 24 }}>
       {last90.length === 0
