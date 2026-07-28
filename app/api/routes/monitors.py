@@ -46,7 +46,9 @@ async def create_monitor(
         await run_check(monitor.id)
         # run_check wrote through a separate session — this session's identity map
         # still holds the pre-check copy (expire_on_commit=False), so force a reload.
-        db.expire(monitor)
+        # Must await the reload explicitly: AsyncSession can't lazy-load an expired
+        # attribute on bare access (raises MissingGreenlet).
+        await db.refresh(monitor)
 
     if monitor.parent_group_id is not None:
         await group_service.invalidate_for_monitor_change(db, monitor)
